@@ -5,6 +5,7 @@ import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.model.DocType;
 import ru.isu.model.Files;
+import ru.isu.model.Node;
 import ru.isu.model.enums.Type;
 
 import java.io.IOException;
@@ -27,10 +28,13 @@ public class FileController {
             "/checkXML_body - проверки <b>тела</b> xml-документа\n";
     final String DESCR_ADD_XML = "\nЗагрузите файл в формате <b>xml</b>." +
             "\nПРОВЕРЯЙТЕ РАЗРЕШЕНИЕ ФАЙЛА ПЕРЕД ЗАГРУЗКОЙ!";
-    final String DESCR_ADD_ZIP = "\nЗагрузите архив СЭМД (имя архива = <b>КОД_СЭМД.zip</b>) с шаблонами(<b>xsd</b>) и схематроном(<b>sch</b>).";
+    final String DESCR_ADD_ZIP = "\nЗагрузите архив СЭМД (имя архива = <b>КОД_СЭМД.zip</b>).В архиве обязательно наличие:" +
+            "1) шаблов(<b>xsd</b>)" +
+            "2) текстового документа с названием СЭМД." +
+            "\nДля проверки на соответствие схематрону - наличие файла(<b>sch</b>).";
     final String DESCR_GET_XML = "Файл <b>xml</b> успешно загружен! ";
     final String DESCR_GET_SCH = "Файл <b>sch</b> успешно загружен!";
-    final String DESCR_GET_ZIP = "Папка с файлами успешно загружена!";
+    final String DESCR_GET_ZIP = "Архив СЭМД успешно загружен!";
     final String DESCR_CHECK = "\n\n<b>Команды:</b>\n\n" +
             "/checkXML - выполнение проверки xml-документа на соответствие шаблонам и схематрону\n" +
             "/checkXML_body - выполнение проверки <b>тела</b> xml-документа на соответствие схематрону";
@@ -46,7 +50,9 @@ public class FileController {
         switch (messageText) {
             case "/listFiles" -> {
                 if (files.getCurrentSEMDcode().isEmpty()) {
-                    return "CЭМД не выбран. \nВыберете СЭМД для просмотра всех файлов /listSEMD \nили\n" + DESCR_ADD_ZIP;
+                    return "CЭМД не выбран. \nВыбор СЭМД осуществляется автоматически " +
+                            "при загрузке вашего xml-документа.\nДля просмотра списка доступных СЭМД команда /listSEMD " +
+                            "\nили\n" + DESCR_ADD_ZIP;
                 } else if (files.listFilesIsEmpty()) {
                     return "Папка с файлами пустая. " + DESCR_ADD_ZIP;
                 } else {
@@ -74,18 +80,18 @@ public class FileController {
             }
 
             case "/currentSEMD" -> {
-                System.out.println(update.getMessage().getText().toString());
-                //sender.send(TEXT_MESSAGE_UPDATE, update);
-                if (files.getCurrentSEMDcode().isEmpty()) {
-                    return DESCR_SEMD;
-                } else {
-                    return "Текущий СЭМД = " + files.getCurrentSEMDcode() + ".";
+                if (!files.getCurrentSEMDcode().isEmpty() && !files.getCurrentSEMDtitle().isEmpty()) {
+                    return "\nТекущий СЭМД =" + files.getCurrentSEMDtitle() +" (код "+files.getCurrentSEMDcode() + ").";
                 }
+                if (!files.getCurrentSEMDcode().isEmpty()) {
+                    return "Текущий код СЭМД = " + files.getCurrentSEMDcode() + ".";
+                }
+                return DESCR_SEMD;
             }
 
             case "/checkXML" -> {
                 try {
-                    readyToChecking(update, false);
+                    return readyToChecking(update, false);
                 } catch (SchematronException e) {
                     throw new RuntimeException(e);
                 }
@@ -93,7 +99,7 @@ public class FileController {
 
             case "/checkXML_body" -> {
                 try {
-                    readyToChecking(update, true);
+                    return readyToChecking(update, true);
                 } catch (SchematronException e) {
                     throw new RuntimeException(e);
                 }
@@ -119,10 +125,9 @@ public class FileController {
     public String getDocument(Update update) {
         Document doc = update.getMessage().getDocument();
         System.out.println("doc name="+doc.getFileName());
-        String fileName = update.getMessage().getText().substring(0, doc.getFileName().indexOf("."));
+        String fileName = "";
         String path = update.getMessage().getText();
         Type type = XML;
-
         switch (doc.getMimeType()) {
             case "text/xml" -> type = XML;
             case "application/octet-stream" -> {
@@ -132,11 +137,13 @@ public class FileController {
                     type = SCH;
                 }
             }
-            
-            case "application/zip" -> type = ZIP;
+            case "application/zip" -> {
+                type = ZIP;
+                fileName = doc.getFileName().substring(0, doc.getFileName().indexOf(".zip"));
+            }
         }
         
-        DocType docType = new DocType(path, type);
+        DocType docType = new DocType(fileName, path, type);
         String chatId = update.getMessage().getChatId().toString();
 
         files.setChatID(chatId);
@@ -144,16 +151,11 @@ public class FileController {
             files.saveNewFile(docType);
 
             if (type.equals(SCH)) {
-                files.setSchematron(docType.getFileName() + ".sch");
                 return DESCR_GET_SCH;
             } else {
-                files.setName_XML(docType.getFileName() + ".xml");
-
-                if (files.getCurrentSEMDcode().isEmpty()) {
-                    return DESCR_GET_XML + DESCR_SEMD;
-                } else {
-                    return DESCR_GET_XML + "\nТекущий СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_CHECK;
-                }
+                files.setCurrentSEMDcode(Node.getAttributeValue(chatId+"/"+files.getName_XML(), "ClinicalDocument/code/@code"));
+                // TODO: get SEMD name from DB using current SEMD code
+                return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_CHECK;
             }
         }
 
@@ -175,7 +177,7 @@ public class FileController {
      * @throws SchematronException
      */
     private String readyToChecking(Update update, boolean body) throws SchematronException {
-        if (files.haveAllFiles()) {
+        if (files.readyToChecking()) {
             if (body) {
                 return DESCR_ANS+files.getAnswer(true);
             } else {
@@ -189,9 +191,9 @@ public class FileController {
             }*/
         }
         
-        if (!files.FileIsExist(files.getName_XML())) {
+        if (files.getCurrentSEMDcode().isEmpty()) {
             return DESCR_ADD_XML;
-        } else if (files.getListFiles().isEmpty()) {
+        } else if (!files.FileIsExist(files.getCurrentSEMDcode()+"/"+files.getCurrentSEMDcode())) {
             return DESCR_ADD_ZIP;
         }
         return "Загрузите xml-документ и выберете СЭМД";

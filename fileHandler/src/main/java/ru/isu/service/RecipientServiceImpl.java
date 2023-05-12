@@ -23,8 +23,7 @@ public class RecipientServiceImpl implements RecipientService {
     @Override
     @RabbitListener(queues = TEXT_MESSAGE_UPDATE)
     public void getTextMessage(Update update) {
-
-        System.out.println("get text message");
+        System.out.println("RecipientServiceImpl:get text message");
 
         var message = update.getMessage();
         var sendMessage = new SendMessage();
@@ -36,13 +35,12 @@ public class RecipientServiceImpl implements RecipientService {
     @Override
     @RabbitListener(queues = DOC_MESSAGE_UPDATE)
     public void getDocMessage(Update update) {
-        System.out.println("get document");
-        fileController.getDocument(update);
+        System.out.println("RecipientServiceImpl:get document");
 
         var message = update.getMessage();
         var sendMessage = new SendMessage();
         sendMessage.setChatId(message.getChatId().toString());
-        sendMessage.setText("send from sendTextAndFilesMessage");
+        sendMessage.setText(fileController.getDocument(update));
         sender.sendTextMessage(sendMessage);
     }
 }

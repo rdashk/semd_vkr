@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import ru.isu.model.DocType;
 import ru.isu.service.AnswerFromFileHandler;
 import ru.isu.service.SenderToRabbitMQ;
 import ru.isu.service.TelegramFileService;
@@ -99,7 +98,7 @@ public class BotController implements AnswerFromFileHandler {
     }
 
     private void unsupportedTypeMessage(Update update) {
-        createSendMessage(update, "Неподдерживаемый тип файла!");
+
     }
 
     /**
@@ -132,15 +131,9 @@ public class BotController implements AnswerFromFileHandler {
                     throw new RuntimeException(e);
                 }
             }*/
-            case "/checkXML": {
-                createSendMessage(update, "Проверяю файл на соответствие схеме и схематрону...");
-            }
-
-            case "/checkXML_body": {
-                createSendMessage(update, "Проверяю тело файла на соответствие телу схематрона...");
-            }
 
             default: {
+                createSendMessage(update, "Обрабатываю команду...");
                 sender.send(TEXT_MESSAGE_UPDATE, update);
             }
         }
@@ -155,11 +148,16 @@ public class BotController implements AnswerFromFileHandler {
     private void getFileType(Update update) {
         createSendMessage(update, "Проверяю тип файла...");
 
-        DocType docType = fileService.checkTypeDoc(update);
-        if (docType == null) unsupportedTypeMessage(update);
+        String telegramFilePath = fileService.checkTypeDoc(update);
+        if (telegramFilePath.isEmpty()) {
+            createSendMessage(update, "Неподдерживаемый тип файла!");
+        }
+        else if (telegramFilePath.equals("wrong_name_zip")) {
+            createSendMessage(update, "Название архива СЭМД должно быть равно коду СЭМД!");
+        }
         else {
             // send file types: XSD, SCH, XML, ZIP
-            update.getMessage().setText(docType.getFilePath());
+            update.getMessage().setText(telegramFilePath);
             sender.send(DOC_MESSAGE_UPDATE, update);
         }
     }
@@ -175,7 +173,6 @@ public class BotController implements AnswerFromFileHandler {
     @Override
     @RabbitListener(queues = ANSWER_MESSAGE)
     public void getAnswerFromRabbitMQ(SendMessage sendMessage) {
-        System.out.println("get answer!");
         createAnswerMessage(sendMessage);
     }
 }

@@ -14,10 +14,11 @@ public class Node {
     /**
      * Getting attribute value from xml
      * @param documentName document name
-     * @param path xPath
+     * @param xPath xPath
      * @return String attribute value
+     * example using: getAttributeValue("file.xml", "ClinicalDocument/code/@code")
      */
-    public static String getAttributeValue(String documentName, String path) {
+    public static String getAttributeValue(String documentName, String xPath) {
 
         XPath xpath = XPathFactory.newInstance().newXPath();
         XPathExpression expr;
@@ -25,7 +26,7 @@ public class Node {
         try {
             DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document document = documentBuilder.parse(documentName);
-            expr = xpath.compile(path);
+            expr = xpath.compile(xPath);
             value = (String) expr.evaluate(document, XPathConstants.STRING);
         } catch (XPathExpressionException e) {
             //throw new RuntimeException(e);

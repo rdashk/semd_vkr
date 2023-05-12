@@ -25,6 +25,7 @@ import java.util.zip.ZipInputStream;
 public class Files {
     private String name_XML = "";
     private String currentSEMDcode = "";
+    private String currentSEMDtitle = "";
     private List<DocType> listFiles = new ArrayList<>();
     private String chatID = "";
     private String schematron = "";
@@ -57,7 +58,7 @@ public class Files {
             if (!getSchematron().isEmpty()) {
                 List<String> errorsSchematron = validator.resultOfSchematronChecking(getCurrentSEMDcode() + "/" + getSchematron(), getChatID() + "/" + getName_XML());
                 if (errorsShema.isEmpty() && errorsSchematron.isEmpty()) {
-                    return "Файл соответствует схемам\n\n и схематрону";
+                    return "Файл соответствует схемам и схематрону";
                 }
                 if (errorsShema.isEmpty()) {
                     stax.errorsFilesCreate(errorsSchematron, getChatID()+"/"+"errors_schematron", getChatID() + "/" + getName_XML());
@@ -111,12 +112,17 @@ public class Files {
         String fileName;
         switch (docType.getType()) {
             case XML -> fileName = getChatID() + "/" + file + ".xml";
-            case XSD -> fileName = getChatID() + "/" + file + ".xsd";
+            //case XSD -> fileName = getChatID() + "/" + file + ".xsd";
             case ZIP -> fileName = file + ".zip";
             case SCH -> fileName = getCurrentSEMDcode() + "/" + file + ".sch";
             default -> throw new IllegalStateException("Unexpected value: " + docType.getType().toString());
         }
         File f = new File(fileName);
+        if (docType.getType().equals(Type.XML)) {
+            setName_XML(file + ".xml");
+        } else if (docType.getType().equals(Type.SCH)) {
+            setSchematron(file + ".sch");
+        }
         FileUtils.copyURLToFile(urlFile, f);
         System.out.println("Create file: " + fileName);
         return fileName;
@@ -127,17 +133,14 @@ public class Files {
      *
      * @return is exists .xml .xsd and .sch files
      */
-    public boolean haveAllFiles() {
-        // if xml is exists
+    public boolean readyToChecking() {
+        // if xml and semd is exists
         if (new File(getChatID() + "/" + getName_XML()).exists()) {
-            if (!listFiles.isEmpty()) return true;
-            if (new File(getCurrentSEMDcode()).exists()) {
-                // reading files
-                //TODO: считывание всех файлов! Сейчас проверка по наличию схематрона
-                return new File(getCurrentSEMDcode() + "/" + getSchematron()).exists();
+            if (new File(getCurrentSEMDcode() + "/" + getCurrentSEMDcode()).exists()) {
+                return true;
             }
         }
-        return !listFiles.isEmpty();
+        return false;
     }
 
     /**
@@ -180,10 +183,8 @@ public class Files {
      * @throws IOException
      */
     public boolean unpackZip(DocType docType) throws IOException {
-        //deleteFolder(getChatID());
-        System.out.println(docType.getFileName());
         String zipFolder = createFileFromURL(docType);
-        setCurrentSEMDcode(docType.getFileName());
+        String semdFolder = docType.getFileName();
 
         InputStream is;
         ZipInputStream zis;
@@ -203,33 +204,49 @@ public class Files {
                     filename = filename.replace(" ", "_");
                 }
                 if (ze.isDirectory()) {
-                    File directPath = new File(getCurrentSEMDcode() + "/" + filename);
+                    File directPath = new File(semdFolder + "/" + filename);
                     directPath.mkdirs();
                     //System.out.println("dir:  " + filename);
                 } else if (!filename.contains("__MACOSX") && !filename.contains(".DS_Store") &&
-                        !getFileType(filename).equals(Type.OTHER)) { // it's shema or schematron
+                        !getFileType(filename).equals(Type.OTHER)) {
+
                     //System.out.println("file:  " + filename);
+
                     Type fileType = getFileType(filename);
 
+                    // set SEMD title, not save txt file
+                    if (fileType.equals(Type.TXT)) {
 
-                    // add filename to list files
-                    this.listFiles.add(new DocType(filename, fileType));
+                        while ((count = zis.read(buffer)) != -1) {
+                            byteArray.write(buffer, 0, count);
+                            byte[] bytes = byteArray.toByteArray();
+                            setCurrentSEMDtitle(new String(bytes, "UTF-8"));
+                            byteArray.reset();
+                        }
+                        zis.closeEntry();
 
-                    FileOutputStream fout = new FileOutputStream(getCurrentSEMDcode() + "/" + filename);
-                    if (fileType.equals(Type.SCH)) {
-                        //System.out.println("Schematron="+filename);
-                        setSchematron(filename);
+                    } else {
+
+                        // reading and writing files
+                        FileOutputStream fout = new FileOutputStream(semdFolder + "/" + filename);
+                        while ((count = zis.read(buffer)) != -1) {
+                            byteArray.write(buffer, 0, count);
+                            byte[] bytes = byteArray.toByteArray();
+                            fout.write(bytes);
+                            byteArray.reset();
+                        }
+                        fout.close();
+                        zis.closeEntry();
+
+                        // it's shema or schematron
+                        // add filename to list files
+                        this.listFiles.add(new DocType(filename, fileType));
+
+                        if (fileType.equals(Type.SCH)) {
+                            //System.out.println("Schematron="+filename);
+                            setSchematron(filename);
+                        }
                     }
-
-                    // reading and writing files
-                    while ((count = zis.read(buffer)) != -1) {
-                        byteArray.write(buffer, 0, count);
-                        byte[] bytes = byteArray.toByteArray();
-                        fout.write(bytes);
-                        byteArray.reset();
-                    }
-                    fout.close();
-                    zis.closeEntry();
                 }
             }
             zis.close();
@@ -237,7 +254,7 @@ public class Files {
             e.printStackTrace();
             return false;
         }
-        deleteFile(zipFolder);
+        deleteFolder(zipFolder);
         return true;
     }
 
@@ -254,6 +271,9 @@ public class Files {
         }
         if (filename.contains(".sch")) {
             return Type.SCH;
+        }
+        if (filename.contains(".txt")) {
+            return Type.TXT;
         }
         return Type.OTHER;
     }
@@ -275,17 +295,12 @@ public class Files {
         }
     }
 
-    public void saveNewFolder(String folder) {
-        File f = new File(folder);
-        System.out.println("Create currentSEMDcode: " + folder);
-    }
-
     public boolean FileIsExist(String fileName) {
         return new File(getCurrentSEMDcode() + "/" + fileName).exists();
     }
 
     /**
-     * Deleting currentSEMDcode
+     * Deleting currentSEMDcode folder
      *
      * @throws IOException
      */

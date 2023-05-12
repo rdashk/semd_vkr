@@ -10,7 +10,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import ru.isu.model.enums.ActionType;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -77,7 +76,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    public void sendMessageWithKeyBoard(long chatId, String textToSend, int listSize, ActionType action) {
+    public void sendMessageWithKeyBoard(long chatId, String textToSend, int listSize) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
         message.setText(textToSend);

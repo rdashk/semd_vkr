@@ -6,15 +6,12 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import ru.isu.model.DocType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import static ru.isu.model.enums.Type.*;
 
 @Service
 public class TelegramFileServiceImpl implements TelegramFileService {
@@ -27,10 +24,10 @@ public class TelegramFileServiceImpl implements TelegramFileService {
     private String fileStorageUri = "https://api.telegram.org/file/bot{token}/{filePath}";
 
     /**
-     * @param telegramDoc received message
+     * @param update received message
      * @return object DocType for defining file type
      */
-    public DocType checkTypeDoc(Update update) {
+    public String checkTypeDoc(Update update) {
         Document doc = update.getMessage().getDocument();
         //System.out.println(doc.getMimeType());
         String s = processDoc(update);
@@ -38,25 +35,25 @@ public class TelegramFileServiceImpl implements TelegramFileService {
         switch (doc.getMimeType()) {
             case "application/octet-stream" -> {
                 if (s.contains(".xsd")) {
-                    return new DocType(fileName, s, XSD);
+                    return s;
                 }
                 if (s.contains(".sch")) {
-                    return new DocType(fileName, s, SCH);
+                    return s;
                 }
                 return null;
             }
             case "text/xml" -> {
-                return new DocType(fileName, s, XML);
+                return s;
             }
             case "application/zip" -> {
                 // if zip folder has semd code
                 if (doc.getFileName().matches("\\d*.zip")) {
-                    return new DocType(fileName, s, ZIP);
+                    return s;
                 }
-                return null;
+                return "wrong_name_zip";
             }
             default -> {
-                return null;
+                return "";
             }
         }
     }
