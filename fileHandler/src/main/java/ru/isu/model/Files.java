@@ -31,8 +31,8 @@ public class Files {
     private String schematron = "";
     private SEMDvalidator validator;
     private Stax stax;
-    String ADD_SCHEMATRON = "\nДобавьте схематрон в выбранный СЭМД.\nДля этого отправьте схематрон в формате sch в чат." +
-            "\nДля просмотра всех файлов в текущем СЭМД нажмите команду /listFiles";
+    String ADD_SCHEMATRON = "\nДобавьте схематрон в выбранный СЭМД." +
+            "\nДля этого отправьте схематрон в формате sch в чат.";
 
     /**
      * Checking xml file using shema and schematron
@@ -46,6 +46,9 @@ public class Files {
             this.validator = new SEMDvalidator();
             this.stax = new Stax();
 
+            File f = new File(getChatID()+"/errors/");
+            f.mkdir();
+
             if (body) {
                 if (!getSchematron().isEmpty()) {
                     return checkBodyBySchematron();
@@ -56,26 +59,30 @@ public class Files {
                     getCurrentSEMDcode() + "/"+getCurrentSEMDcode() + "/" + "CDA.xsd",
                     getChatID() + "/" + getName_XML());
             if (!getSchematron().isEmpty()) {
-                List<String> errorsSchematron = validator.resultOfSchematronChecking(getCurrentSEMDcode() + "/" + getSchematron(), getChatID() + "/" + getName_XML());
+                List<String> errorsSchematron = validator.resultOfSchematronChecking(getCurrentSEMDcode() +
+                        "/" + getSchematron(), getChatID() + "/" + getName_XML());
                 if (errorsShema.isEmpty() && errorsSchematron.isEmpty()) {
                     return "Файл соответствует схемам и схематрону";
                 }
                 if (errorsShema.isEmpty()) {
-                    stax.errorsFilesCreate(errorsSchematron, getChatID()+"/"+"errors_schematron", getChatID() + "/" + getName_XML());
+                    stax.errorsFilesCreate(errorsSchematron, getChatID()+"/errors/errors_schematron",
+                            getChatID() + "/" + getName_XML());
                     return "Файл соответствует схемам.\n\nВ схематроне найдены ошибки!";
                 }
-                stax.errorsFilesCreate(errorsShema, getChatID()+"/"+"errors_shema", getChatID() + "/" + getName_XML());
+                stax.errorsFilesCreate(errorsShema, getChatID()+"/errors/errors_shema", getChatID() +
+                        "/" + getName_XML());
                 return "Файл соответствует схематрону.\n\nВ схемах найдены ошибки!";
 
             }
             if (errorsShema.isEmpty()) {
                 return "Файл соответствует схемам. \n\nФайл схематрона отсутствует."+ADD_SCHEMATRON;
             }
-            stax.errorsFilesCreate(errorsShema, getChatID()+"/"+"errors_shema", getChatID() + "/" + getName_XML());
+            stax.errorsFilesCreate(errorsShema, getChatID()+"/errors/errors_shema", getChatID() +
+                    "/" + getName_XML());
             return "В схемах найдены ошибки!\nВ СЭМД отсутствует файл схематрона."+ADD_SCHEMATRON;
 
         }
-        return "Файлы отсутствуют! \nПроверьте наличие шаблонов и схематронов в загруженном архиве. \n\nДля проверки нажмите команду /listFiles";
+        return "Файлы отсутствуют! \nЗагрузите xml-документ для начала работы.";
     }
 
     private String checkBodyBySchematron() {
@@ -94,17 +101,16 @@ public class Files {
         if (errorsSchematron.isEmpty()) {
             return "Тело xml-документа соответствует телу схематрона";
         }
-        stax.errorsFilesCreate(errorsSchematron, "errors_body", getChatID()+"/"+getChatID()+".xml");
+        stax.errorsFilesCreate(errorsSchematron, "/errors/errors_body", getChatID()+"/"+getChatID()+".xml");
         return "В теле документа найдены ошибки!";
     }
 
 
     /**
      * Reading from link and writing file to system directory
-     *
+     * Save xml and sch file names to object (with extension)
      * @param docType file link from telegram chat
      * @return file name in system directory
-     * @throws IOException
      */
     private String createFileFromURL(DocType docType) throws IOException {
         URL urlFile = new URL(docType.getFilePath());
@@ -159,24 +165,6 @@ public class Files {
     }
 
     /**
-     * Getting all file names in currentSEMDcode
-     *
-     * @return list of file names
-     */
-    public List<String> getFilesFromFolder() {
-        List<String> list = new ArrayList<>();
-        for (DocType f : this.listFiles) {
-            System.out.println(f.getFilePath());
-            list.add(f.getFilePath());
-        }
-        return list;
-    }
-
-    public void setChatID(String chatID) {
-        this.chatID = chatID;
-    }
-
-    /**
      * Unpacking archive and saving all files from it
      *
      * @return manage to do unpacking
@@ -225,7 +213,7 @@ public class Files {
                         }
                         zis.closeEntry();
 
-                    } else {
+                    } else {// it's shema or schematron
 
                         // reading and writing files
                         FileOutputStream fout = new FileOutputStream(semdFolder + "/" + filename);
@@ -238,9 +226,8 @@ public class Files {
                         fout.close();
                         zis.closeEntry();
 
-                        // it's shema or schematron
                         // add filename to list files
-                        this.listFiles.add(new DocType(filename, fileType));
+                        //this.listFiles.add(new DocType(filename, fileType));
 
                         if (fileType.equals(Type.SCH)) {
                             //System.out.println("Schematron="+filename);
@@ -296,7 +283,8 @@ public class Files {
     }
 
     public boolean FileIsExist(String fileName) {
-        return new File(getCurrentSEMDcode() + "/" + fileName).exists();
+        return new File(getCurrentSEMDcode() +
+                "/" + fileName).exists();
     }
 
     /**
@@ -306,7 +294,6 @@ public class Files {
      */
     public void deleteFolder(String folderName) throws IOException {
         if (new File(folderName).exists()) {
-            this.listFiles.clear();
             FileUtils.forceDelete(new File(folderName));
         }
     }

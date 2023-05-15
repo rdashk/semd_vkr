@@ -5,6 +5,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 import static ru.isu.model.RabbitQueue.ANSWER_MESSAGE;
+import static ru.isu.model.RabbitQueue.VALID_MESSAGE;
 
 /**
  * Install listener for every queue in RabbitMQ
@@ -23,7 +24,7 @@ public class SenderServiceImpl implements SenderService{
     }
 
     @Override
-    public void sendTextAndFilesMessage(SendMessage sendMessage, String doc) {
-
+    public void sendValidMessage(SendMessage sendMessage) {
+        rabbitTemplate.convertAndSend(VALID_MESSAGE, sendMessage);
     }
 }

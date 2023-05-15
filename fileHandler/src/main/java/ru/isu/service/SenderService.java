@@ -8,6 +8,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 public interface SenderService {
     void sendTextMessage(SendMessage sendMessage);
 
-    void sendTextAndFilesMessage(SendMessage sendMessage, String doc);
+    void sendValidMessage(SendMessage sendMessage);
 
 }

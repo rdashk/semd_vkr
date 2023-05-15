@@ -28,4 +28,9 @@ public class BotConfig {
     SenderToRabbitMQ getSenderToRabbitMQ(RabbitTemplate rabbitTemplate) {
         return new SenderToRabbitMQImpl(rabbitTemplate);
     }
+
+    /*@Bean
+    public AnswerFromFileHandler getAnswerFromFileHandler(RabbitTemplate r) {
+        return new AnswerFromFileHandlerImpl(new BotController(new TelegramFileServiceImpl(), new SenderToRabbitMQImpl(r)));
+    }*/
 }

@@ -2,6 +2,7 @@ package ru.isu.service;
 
 import org.jvnet.hk2.annotations.Service;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.controller.FileController;
@@ -23,13 +24,18 @@ public class RecipientServiceImpl implements RecipientService {
     @Override
     @RabbitListener(queues = TEXT_MESSAGE_UPDATE)
     public void getTextMessage(Update update) {
-        System.out.println("RecipientServiceImpl:get text message");
+        //System.out.println("RecipientServiceImpl:get text message");
 
         var message = update.getMessage();
         var sendMessage = new SendMessage();
         sendMessage.setChatId(message.getChatId().toString());
+        String command = update.getMessage().getText();
         sendMessage.setText(fileController.getText(update));
-        sender.sendTextMessage(sendMessage);
+        if (command.contains("/checkXML")) {
+            sender.sendValidMessage(sendMessage);
+        }else {
+            sender.sendTextMessage(sendMessage);
+        }
     }
 
     @Override
@@ -41,6 +47,7 @@ public class RecipientServiceImpl implements RecipientService {
         var sendMessage = new SendMessage();
         sendMessage.setChatId(message.getChatId().toString());
         sendMessage.setText(fileController.getDocument(update));
+        SendDocument sendDocument = new SendDocument();
         sender.sendTextMessage(sendMessage);
     }
 }

@@ -36,4 +36,9 @@ public class RabbitMQConfig {
     public Queue answerMessageQueue() {
         return new Queue(ANSWER_MESSAGE);
     }
+
+    @Bean
+    public Queue validMessageQueue() {
+        return new Queue(VALID_MESSAGE);
+    }
 }

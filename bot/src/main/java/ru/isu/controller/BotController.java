@@ -1,5 +1,6 @@
 package ru.isu.controller;
 
+import org.apache.commons.io.FileUtils;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -8,6 +9,11 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.service.AnswerFromFileHandler;
 import ru.isu.service.SenderToRabbitMQ;
 import ru.isu.service.TelegramFileService;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static ru.isu.model.RabbitQueue.*;
 
@@ -23,23 +29,10 @@ public class BotController implements AnswerFromFileHandler {
             "/help - список команд\n" +
             "/listSEMD - список доступных СЭМД\n" +
             "/listFiles - список доступных файлов текущего СЭМД\n" +
-            "/changeSEMD - смена СЭМД\n" +
             "/currentSEMD - текущий СЭМД\n" +
             "/checkXML - проверка xml-документа\n" +
-            "/checkXML_body - проверки <b>тела</b> xml-документа\n";
-    final String DESCR_ADD_XML = "\nЗагрузите файл в формате <b>xml</b>." +
-            "\nПРОВЕРЯЙТЕ РАЗРЕШЕНИЕ ФАЙЛА ПЕРЕД ЗАГРУЗКОЙ!";
-    final String DESCR_ADD_ZIP = "\nЗагрузите архив СЭМД (имя архива = <b>КОД_СЭМД.zip</b>) с шаблонами(<b>xsd</b>) и схематроном(<b>sch</b>).";
-    final String DESCR_GET_XML = "Файл <b>xml</b> успешно загружен! ";
-    final String DESCR_GET_SCH = "Файл <b>sch</b> успешно загружен!";
-    final String DESCR_GET_ZIP = "Папка с файлами успешно загружена!";
-    final String DESCR_CHECK = "\n\n<b>Команды:</b>\n\n" +
-            "/checkXML - выполнение проверки xml-документа на соответствие шаблонам и схематрону\n" +
-            "/checkXML_body - выполнение проверки <b>тела</b> xml-документа на соответствие схематрону";
-    final String DESCR_ANS = "<b>Результат проверки</b>\n\n";
-    final String DESCR_SEMD = "Выберете СЭМД или загрузите новый архив\n\n<b>Команды:</b>\n\n" +
-            "/listSEMD - список доступных СЭМД\n" +
-            "/addNewSEMD - добавление нового СЭМД";
+            "/checkXML_body - проверки <b>тела</b> xml-документа\n" +
+            "/deleteMyXML - удалить загруженный xml-документ";
 
     private final TelegramFileService fileService;
     private final SenderToRabbitMQ sender;
@@ -93,12 +86,8 @@ public class BotController implements AnswerFromFileHandler {
         } else if (message.hasDocument()) {
             getFileType(update);
         } else {
-            unsupportedTypeMessage(update);
+            createSendMessage(update, "Неподдерживаемый тип файла!");
         }
-    }
-
-    private void unsupportedTypeMessage(Update update) {
-
     }
 
     /**
@@ -120,17 +109,6 @@ public class BotController implements AnswerFromFileHandler {
                         "Здравствуйте, " + message.getChat().getFirstName() + "!" + DESCR_BOT);
                 break;
             }
-
-            /*case "/deleteFolder" -> {
-                telegramBot.sendMessage(message.getChatId(), "Удаление папки...");
-                try {
-                    files.deleteFolder(message.getChatId().toString());
-                    telegramBot.sendMessage(message.getChatId(), "Папка с файлами успешно удалена.");
-                } catch (IOException e) {
-                    telegramBot.sendMessage(message.getChatId(), "Невозможно удалить папку!");
-                    throw new RuntimeException(e);
-                }
-            }*/
 
             default: {
                 createSendMessage(update, "Обрабатываю команду...");
@@ -170,9 +148,60 @@ public class BotController implements AnswerFromFileHandler {
         telegramBot.sendMessage(Long.parseLong(message.getChatId()), message.getText().toString());
     }
 
+    public void createValidMessage(SendMessage message) {
+        telegramBot.sendMessage(Long.parseLong(message.getChatId()), message.getText().toString());
+        // if found some errors
+        List<String> pathFilesWithErrors = hasError(message.getChatId().toString()+"/errors");
+        //System.out.println(pathFilesWithErrors.toString());
+        if (!pathFilesWithErrors.isEmpty()) {
+            telegramBot.sendFile(Long.parseLong(message.getChatId()), pathFilesWithErrors);
+            deleteFolder(message.getChatId()+"/errors");
+        }
+    }
+
+    private void deleteFolder(String folderName) {
+        if (new File(folderName).exists()) {
+            try {
+                FileUtils.forceDelete(new File(folderName));
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+    }
+
+    private List<String> hasError(String folder) {
+        List<String> files = new ArrayList<>();
+        if (new File(folder).exists()) {
+
+            if (new File(folder+"/errors_shema.pdf").exists()) {
+                files.add(folder+"/errors_shema.pdf");
+                files.add(folder+"/errors_shema.txt");
+            }
+            if (new File(folder+"/errors_schematron.pdf").exists()) {
+                files.add(folder+"/errors_schematron.pdf");
+                files.add(folder+"/errors_schematron.txt");
+            }
+            if (new File(folder+"/errors_body.pdf").exists()) {
+                files.add(folder+"/errors_body.pdf");
+                files.add(folder+"/errors_body.txt");
+            }
+        }
+
+
+        return files;
+    }
+
     @Override
     @RabbitListener(queues = ANSWER_MESSAGE)
     public void getAnswerFromRabbitMQ(SendMessage sendMessage) {
+
         createAnswerMessage(sendMessage);
+    }
+
+    @Override
+    @RabbitListener(queues = VALID_MESSAGE)
+    public void getValidFromRabbitMQ(SendMessage sendMessage) {
+
+        createValidMessage(sendMessage);
     }
 }

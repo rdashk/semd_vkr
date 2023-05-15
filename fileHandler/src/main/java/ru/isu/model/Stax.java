@@ -152,16 +152,49 @@ public class Stax {
         }
     }
 
+    /**
+     *
+     * @param listErrors
+     * @param fileName
+     * @param currentXML
+     */
     public void errorsFilesCreate(List<String> listErrors, String fileName, String currentXML) {
         BufferedWriter writer = null;
 
-        String location, txtFile = fileName + ".txt", error_descr;
+        File txtFile = new File(fileName + ".txt");
         System.out.println("list errors="+listErrors);
 
+        String[] errors = new String[3];
+        String[] descrErrors = new String[3];
+
+        errors[0] = "providerOrganization";
+        errors[1] = "telecom";
+        errors[2] = "author";
+
+        descrErrors[0] = "Core06-1. Элемент //identity:Props должен иметь 1 элемент identity:Ogrnip.";
+        descrErrors[1] = "descr 2";
+        descrErrors[2] = "author!";
+
+        /*
+            BufferedWriter writer = new BufferedWriter(new FileWriter(ans, true));
+
+            for (String mes: r.getValidationMessages()) {
+                // mes = String.format("%s %s %s", element.getLocalName(), element.getAttribute("location"), element.getTextContent());
+                int end1 = mes.indexOf(" ");
+                String s1 = mes.substring(0, end1);
+                mes = mes.substring(end1+1);
+                end1 = mes.indexOf(" ");
+
+                writer.append("element.getLocalName = "+s1+
+                        "\nelement.getAttribute(\"location\") = "+mes.substring(0, end1)+
+                        "\nelement.getTextContent() = "+mes.substring(end1+1)+
+                        "\n----\n");
+            }
+            writer.close();*/
 
         try {
-            writer = new BufferedWriter(new FileWriter(txtFile, true));
-            xmlr = XMLInputFactory.newInstance().createXMLStreamReader("ii.xml", new FileInputStream("ii.xml"));
+            writer = new BufferedWriter(new FileWriter(txtFile, false));
+            xmlr = XMLInputFactory.newInstance().createXMLStreamReader(currentXML, new FileInputStream(currentXML));
 
             Document document = new Document();
             PdfWriter.getInstance(document, new FileOutputStream(fileName + ".pdf"));
@@ -175,86 +208,79 @@ public class Stax {
             BaseColor currentColor = BaseColor.WHITE; // install background color
             Chunk chunk = new Chunk();
             Paragraph paragraph = new Paragraph();
+            int ind = 0, endInd = 0;
 
-            for (String mes : listErrors) {
-
-                location = "providerOrganization"; // error path
-                error_descr = "Core06-1. Элемент //identity:Props должен иметь 1 элемент identity:Ogrnip.";
-
-                writer.append(mes); // write error to .txt
-
-                // read .xml and write to pdf
-                while (xmlr.hasNext()) {
-                    xmlr.next();
-                    switch (xmlr.getEventType()) { // choose xml element type
-                        case XMLStreamConstants.START_ELEMENT: {
-                            if (xmlr.getPrefix().isEmpty()) {
-                                str = new StringBuilder(xmlr.getLocalName());
-                            } else {
-                                str = new StringBuilder(xmlr.getPrefix() + ":" + xmlr.getLocalName());
-                            }
-                            if (xmlr.getAttributeCount() > 0) {
-                                str.append(" ");
-                                for (int i = 0; i < xmlr.getAttributeCount(); i++) {
-                                    if (xmlr.getAttributePrefix(i).isEmpty()) {
-                                        str.append(xmlr.getAttributeLocalName(i)).append("=\"").append(xmlr.getAttributeValue(i)).append("\" ");
-                                    } else {
-                                        str.append(xmlr.getAttributePrefix(i))
-                                                .append(":")
-                                                .append(xmlr.getAttributeLocalName(i))
-                                                .append("=\"")
-                                                .append(xmlr.getAttributeValue(i)).append("\" ");
-                                    }
+            // read .xml and write to pdf
+            while (xmlr.hasNext()) {
+                xmlr.next();
+                switch (xmlr.getEventType()) { // choose xml element type
+                    case XMLStreamConstants.START_ELEMENT: {
+                        if (xmlr.getPrefix().isEmpty()) {
+                            str = new StringBuilder(xmlr.getLocalName());
+                        } else {
+                            str = new StringBuilder(xmlr.getPrefix() + ":" + xmlr.getLocalName());
+                        }
+                        if (xmlr.getAttributeCount() > 0) {
+                            str.append(" ");
+                            for (int i = 0; i < xmlr.getAttributeCount(); i++) {
+                                if (xmlr.getAttributePrefix(i).isEmpty()) {
+                                    str.append(xmlr.getAttributeLocalName(i)).append("=\"").append(xmlr.getAttributeValue(i)).append("\" ");
+                                } else {
+                                    str.append(xmlr.getAttributePrefix(i)).append(":").append(xmlr.getAttributeLocalName(i)).append("=\"").append(xmlr.getAttributeValue(i)).append("\" ");
                                 }
                             }
-                            str.append(">");
+                        }
+                        str.append(">");
 
-                            if (xmlr.getLocalName().equals(location)) {
-                                System.out.println(xmlr.getName());
+                        if (ind < errors.length && xmlr.getLocalName().equals(errors[ind])) {
 
-                                currentColor = BaseColor.PINK;
-                                chunk = new Chunk("Строка №" + xmlr.getLocation().getLineNumber() +
-                                        "\n"+error_descr+"\n", new Font(baseFont, 9, Font.NORMAL));
-                                chunk.getFont().setColor(BaseColor.RED);
-                                paragraph.add(chunk);
-                            }
-                            chunk = new Chunk("<" + str.toString(), font);
-                            chunk.setBackground(currentColor);
-                            chunk.getFont().setColor(BaseColor.BLUE);
+                            currentColor = BaseColor.PINK;
+                            chunk = new Chunk("Строка №" + xmlr.getLocation().getLineNumber() +
+                                    "\n"+ descrErrors[ind]+"\n", new Font(baseFont, 9, Font.NORMAL));
+                            chunk.getFont().setColor(BaseColor.RED);
                             paragraph.add(chunk);
-                            break;
+
+                            writer.append(errors[ind]+"\n");
+                            ind++;
                         }
-                        case XMLStreamConstants.CHARACTERS: {
-                            chunk = new Chunk(xmlr.getText(), new Font(baseFont, 9, Font.NORMAL));
-                            chunk.setBackground(BaseColor.WHITE);
-                            chunk.getFont().setColor(BaseColor.BLACK);
-                            paragraph.add(chunk);
-                            break;
+                        chunk = new Chunk("<" + str.toString(), font);
+                        chunk.setBackground(currentColor);
+                        chunk.getFont().setColor(BaseColor.BLUE);
+                        paragraph.add(chunk);
+                        break;
+                    }
+                    case XMLStreamConstants.CHARACTERS: {
+                        chunk = new Chunk(xmlr.getText(), new Font(baseFont, 9, Font.NORMAL));
+                        chunk.setBackground(BaseColor.WHITE);
+                        chunk.getFont().setColor(BaseColor.BLACK);
+                        paragraph.add(chunk);
+                        break;
+                    }
+                    case XMLStreamConstants.COMMENT: {
+                        chunk = new Chunk("<!-- " + xmlr.getText().trim() + " -->", new Font(baseFont, 8, Font.ITALIC));
+                        chunk.getFont().setColor(BaseColor.LIGHT_GRAY);
+                        chunk.setBackground(BaseColor.WHITE);
+                        paragraph.add(chunk);
+                        break;
+                    }
+                    case XMLStreamConstants.END_ELEMENT: {
+                        if (xmlr.getPrefix().isEmpty()) {
+                            chunk = new Chunk("</" + xmlr.getLocalName() + ">", font);
+                        } else {
+                            chunk = new Chunk("</" + xmlr.getPrefix() + ":" + xmlr.getLocalName() + ">", font);
                         }
-                        case XMLStreamConstants.COMMENT: {
-                            chunk = new Chunk("<!-- " + xmlr.getText().trim() + " -->", new Font(baseFont, 8, Font.ITALIC));
-                            chunk.getFont().setColor(BaseColor.LIGHT_GRAY);
-                            chunk.setBackground(BaseColor.WHITE);
-                            paragraph.add(chunk);
-                            break;
+                        chunk.setBackground(currentColor);
+                        chunk.getFont().setColor(BaseColor.BLUE);
+                        paragraph.add(chunk);
+                        if (endInd < errors.length && xmlr.getLocalName().equals(errors[endInd])) {
+                            currentColor = BaseColor.WHITE;
+                            endInd = ind;
                         }
-                        case XMLStreamConstants.END_ELEMENT: {
-                            if (xmlr.getPrefix().isEmpty()) {
-                                chunk = new Chunk("</" + xmlr.getLocalName() + ">", font);
-                            } else {
-                                chunk = new Chunk("</" + xmlr.getPrefix() + ":" + xmlr.getLocalName() + ">", font);
-                            }
-                            chunk.setBackground(currentColor);
-                            chunk.getFont().setColor(BaseColor.BLUE);
-                            paragraph.add(chunk);
-                            if (xmlr.getLocalName().equals(location)) {
-                                currentColor = BaseColor.WHITE;
-                            }
-                            break;
-                        }
+                        break;
                     }
                 }
             }
+
             document.add(paragraph);
             document.close();
             writer.close();

@@ -41,7 +41,7 @@ public class SEMDvalidator implements SchematronValidator, ShemaValidator{
             }
             this.errors = r.getValidationMessages();
 
-            /*System.out.println("report="+r.getValidationReport());
+            /*
             BufferedWriter writer = new BufferedWriter(new FileWriter(ans, true));
 
             for (String mes: r.getValidationMessages()) {

@@ -61,11 +61,14 @@ public class TelegramBot extends TelegramLongPollingBot {
         executeMessage(message);
     }
 
-    public void sendFile(long chatId, File f) {
+    public void sendFile(long chatId, List<String> files) {
         SendDocument doc = new SendDocument();
-        doc.setChatId(chatId);
-        doc.setDocument(new InputFile(f));
-        executeFileMessage(doc);
+        for (String filePath:files) {
+            doc = new SendDocument();
+            doc.setChatId(chatId);
+            doc.setDocument(new InputFile(new File(filePath)));
+            executeFileMessage(doc);
+        }
     }
 
     private void executeFileMessage(SendDocument message){

@@ -17,15 +17,7 @@ import static ru.isu.model.enums.Type.ZIP;
 
 public class FileController {
     Files files = new Files();
-    final String DESCR_BOT = "\n\nЭто бот для проверки XML-документа на соответствие СЭМД\n\n<b>Команды:</b>\n\n" +
-            "/start - начало работы с ботом\n" +
-            "/help - список команд\n" +
-            "/listSEMD - список доступных СЭМД\n" +
-            "/listFiles - список доступных файлов текущего СЭМД\n" +
-            "/changeSEMD - смена СЭМД\n" +
-            "/currentSEMD - текущий СЭМД\n" +
-            "/checkXML - проверка xml-документа\n" +
-            "/checkXML_body - проверки <b>тела</b> xml-документа\n";
+
     final String DESCR_ADD_XML = "\nЗагрузите файл в формате <b>xml</b>." +
             "\nПРОВЕРЯЙТЕ РАЗРЕШЕНИЕ ФАЙЛА ПЕРЕД ЗАГРУЗКОЙ!";
     final String DESCR_ADD_ZIP = "\nЗагрузите архив СЭМД (имя архива = <b>КОД_СЭМД.zip</b>).В архиве обязательно наличие:" +
@@ -39,9 +31,8 @@ public class FileController {
             "/checkXML - выполнение проверки xml-документа на соответствие шаблонам и схематрону\n" +
             "/checkXML_body - выполнение проверки <b>тела</b> xml-документа на соответствие схематрону";
     final String DESCR_ANS = "<b>Результат проверки</b>\n\n";
-    final String DESCR_SEMD = "Выберете СЭМД или загрузите новый архив\n\n<b>Команды:</b>\n\n" +
-            "/listSEMD - список доступных СЭМД\n" +
-            "/addNewSEMD - добавление нового СЭМД";
+    final String DESCR_SEMD = "CЭМД не выбран. \nВыбор СЭМД осуществляется автоматически " +
+            "при загрузке вашего xml-документа.\nДля просмотра списка доступных СЭМД команда /listSEMD ";
 
 
     public String getText(Update update) {
@@ -50,22 +41,12 @@ public class FileController {
         switch (messageText) {
             case "/listFiles" -> {
                 if (files.getCurrentSEMDcode().isEmpty()) {
-                    return "CЭМД не выбран. \nВыбор СЭМД осуществляется автоматически " +
-                            "при загрузке вашего xml-документа.\nДля просмотра списка доступных СЭМД команда /listSEMD " +
-                            "\nили\n" + DESCR_ADD_ZIP;
-                } else if (files.listFilesIsEmpty()) {
-                    return "Папка с файлами пустая. " + DESCR_ADD_ZIP;
+                    return DESCR_SEMD;
                 } else {
-                    return "<b>Список доступных файлов</b>\n\n" + toMessageString(files.getFilesFromFolder());
+                    // TODO: get files from DB
+                    //return "<b>Список доступных файлов</b>\n\n" + toMessageString(list from DB);
+                    return "<b>Список доступных файлов</b>\n\n";
                 }
-            }
-
-            case "/changeSEMD" -> {
-                return DESCR_SEMD;
-            }
-
-            case "/addNewSEMD" -> {
-                return DESCR_ADD_ZIP;
             }
 
             case "/listSEMD" -> {
@@ -91,7 +72,7 @@ public class FileController {
 
             case "/checkXML" -> {
                 try {
-                    return readyToChecking(update, false);
+                    return readyToChecking(false);
                 } catch (SchematronException e) {
                     throw new RuntimeException(e);
                 }
@@ -99,9 +80,21 @@ public class FileController {
 
             case "/checkXML_body" -> {
                 try {
-                    return readyToChecking(update, true);
+                    return readyToChecking(true);
                 } catch (SchematronException e) {
                     throw new RuntimeException(e);
+                }
+            }
+
+            case "/deleteMyXML" -> {
+                String chatId = files.getChatID();
+                if (chatId.isEmpty()) return "xml-документ отсутствует в системе!";
+                try {
+                    // delete all users files from his folder
+                    files.deleteFolder(chatId);
+                    return "xml-документ успешно удален.";
+                } catch (IOException e) {
+                    return "xml-документ отсутствует в системе!";
                 }
             }
         }
@@ -129,7 +122,7 @@ public class FileController {
         String path = update.getMessage().getText();
         Type type = XML;
         switch (doc.getMimeType()) {
-            case "text/xml" -> type = XML;
+            case "text/xml" -> {type = XML;}
             case "application/octet-stream" -> {
                 if (path.contains(".xsd")) {
                     type = XSD;
@@ -154,15 +147,16 @@ public class FileController {
                 return DESCR_GET_SCH;
             } else {
                 files.setCurrentSEMDcode(Node.getAttributeValue(chatId+"/"+files.getName_XML(), "ClinicalDocument/code/@code"));
-                // TODO: get SEMD name from DB using current SEMD code
-                return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_CHECK;
+                // TODO: get SEMD folder from DB using current SEMD code
+                // if (SEMD folder from DB isn't exist) return return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_ADD_ZIP
+                // else
+                    return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_CHECK;
             }
         }
 
         try {
             files.unpackZip(docType);
             //TODO: save to db
-
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -172,23 +166,14 @@ public class FileController {
 
     /**
      * User have all files and can get conformity check
-     * @param update This object represents an incoming update.
-     *               update1 = update2, if update1_id = update2_id.
-     * @throws SchematronException
      */
-    private String readyToChecking(Update update, boolean body) throws SchematronException {
+    private String readyToChecking(boolean body) throws SchematronException {
         if (files.readyToChecking()) {
             if (body) {
                 return DESCR_ANS+files.getAnswer(true);
             } else {
                 return DESCR_ANS+files.getAnswer(false);
             }
-            //TODO: delete customer files
-            /*try {
-                files.deleteFolder(files.getChatID());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }*/
         }
         
         if (files.getCurrentSEMDcode().isEmpty()) {
