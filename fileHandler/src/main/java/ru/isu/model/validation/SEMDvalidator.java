@@ -32,7 +32,6 @@ public class SEMDvalidator implements SchematronValidator, ShemaValidator{
         Application app;
         Result r;
 
-        String ans = "errors_schematron.txt";
         try {
             app = new Application(new Schematron(getResourceAsStream(schPath)));
             r = app.execute(new File(xmlDocument));
@@ -81,8 +80,8 @@ public class SEMDvalidator implements SchematronValidator, ShemaValidator{
             Schema schema = factory.newSchema(new File(xsdPath));
             Validator validator = schema.newValidator();
             validator.validate(new StreamSource(new File(xmlPath)));
+
         } catch (IOException | SAXException e) {
-            System.out.println("Exception: "+e.getMessage());
             this.errors.add(e.getMessage());
             return false;
         }

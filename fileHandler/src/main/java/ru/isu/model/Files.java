@@ -3,7 +3,6 @@ package ru.isu.model;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import name.dmaus.schxslt.SchematronException;
 import org.apache.commons.io.FileUtils;
 import ru.isu.model.enums.Type;
 import ru.isu.model.validation.SEMDvalidator;
@@ -28,7 +27,6 @@ public class Files {
     private String currentSEMDtitle = "";
     private List<DocType> listFiles = new ArrayList<>();
     private String chatID = "";
-    private String schematron = "";
     private SEMDvalidator validator;
     private Stax stax;
     String ADD_SCHEMATRON = "\nДобавьте схематрон в выбранный СЭМД." +
@@ -37,9 +35,8 @@ public class Files {
     /**
      * Checking xml file using shema and schematron
      * @return string result of checking
-     * @throws SchematronException
      */
-    public String getAnswer(boolean body) throws SchematronException {
+    public String getAnswer(boolean body) {
 
         if (!chatID.isEmpty() && !currentSEMDcode.isEmpty()) {
 
@@ -50,35 +47,33 @@ public class Files {
             f.mkdir();
 
             if (body) {
-                if (!getSchematron().isEmpty()) {
+                if (fileIsExist(getCurrentSEMDcode()+"/"+getCurrentSEMDcode()+".sch")) {
                     return checkBodyBySchematron();
                 }
                 return "Проверка тела документа невозможна! В СЭМД отсутствует файл схематрона."+ADD_SCHEMATRON;
             }
             List<String> errorsShema = validator.resultOfSchemaChecking(
-                    getCurrentSEMDcode() + "/"+getCurrentSEMDcode() + "/" + "CDA.xsd",
+                    getCurrentSEMDcode() + "/" + "CDA.xsd",
                     getChatID() + "/" + getName_XML());
-            if (!getSchematron().isEmpty()) {
-                List<String> errorsSchematron = validator.resultOfSchematronChecking(getCurrentSEMDcode() +
-                        "/" + getSchematron(), getChatID() + "/" + getName_XML());
+            if (fileIsExist(getCurrentSEMDcode()+"/"+getCurrentSEMDcode()+".sch")) {
+                List<String> errorsSchematron = validator.resultOfSchematronChecking(getCurrentSEMDcode()+"/"+getCurrentSEMDcode()+".sch",
+                        getChatID() + "/" + getName_XML());
                 if (errorsShema.isEmpty() && errorsSchematron.isEmpty()) {
                     return "Файл соответствует схемам и схематрону";
                 }
                 if (errorsShema.isEmpty()) {
-                    stax.errorsFilesCreate(errorsSchematron, getChatID()+"/errors/errors_schematron",
+                    stax.errorsSchematronFilesCreate(errorsSchematron, getChatID()+"/errors/errors_schematron",
                             getChatID() + "/" + getName_XML());
                     return "Файл соответствует схемам.\n\nВ схематроне найдены ошибки!";
                 }
-                stax.errorsFilesCreate(errorsShema, getChatID()+"/errors/errors_shema", getChatID() +
-                        "/" + getName_XML());
+                stax.errorsSchemaFileCreate(errorsShema, getChatID()+"/errors/errors_shema");
                 return "Файл соответствует схематрону.\n\nВ схемах найдены ошибки!";
 
             }
             if (errorsShema.isEmpty()) {
-                return "Файл соответствует схемам. \n\nФайл схематрона отсутствует."+ADD_SCHEMATRON;
+                return "Файл соответствует схемам. \n\nФайл схематрона отсутствует.\n"+ADD_SCHEMATRON;
             }
-            stax.errorsFilesCreate(errorsShema, getChatID()+"/errors/errors_shema", getChatID() +
-                    "/" + getName_XML());
+            stax.errorsSchemaFileCreate(errorsShema, getChatID()+"/errors/errors_shema");
             return "В схемах найдены ошибки!\nВ СЭМД отсутствует файл схематрона."+ADD_SCHEMATRON;
 
         }
@@ -86,22 +81,17 @@ public class Files {
     }
 
     private String checkBodyBySchematron() {
-        try {
-            deleteFile(getChatID()+"/"+getChatID()+".xml");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
 
         String xmlFile = getChatID() + "/" + getName_XML();
-        String schFile = getCurrentSEMDcode() + "/" + getSchematron();
-        stax.saveBody(xmlFile, getChatID()+"/"+getChatID(), Type.XML);
-        stax.saveBody(schFile, getChatID()+"/"+getChatID(), Type.SCH);
+        String schFile = getCurrentSEMDcode()+"/"+getCurrentSEMDcode()+".sch";
+        stax.saveBody(xmlFile, getChatID()+"/"+getChatID()+"_b", Type.XML);
+        stax.saveBody(schFile, getChatID()+"/"+getChatID()+"_b", Type.SCH);
 
-        List<String> errorsSchematron = validator.resultOfSchematronChecking(getChatID()+"/"+getChatID()+".sch", getChatID()+"/"+getChatID()+".xml");
-        if (errorsSchematron.isEmpty()) {
+        List<String> errorsSchematron = validator.resultOfSchematronChecking(getChatID()+"/"+getChatID()+"_b.sch", getChatID()+"/"+getChatID()+"_b.xml");
+        if (errorsSchematron == null) {
             return "Тело xml-документа соответствует телу схематрона";
         }
-        stax.errorsFilesCreate(errorsSchematron, "/errors/errors_body", getChatID()+"/"+getChatID()+".xml");
+        stax.errorsSchematronFilesCreate(errorsSchematron, "/errors/errors_body", getChatID()+"/"+getChatID()+".xml");
         return "В теле документа найдены ошибки!";
     }
 
@@ -120,14 +110,12 @@ public class Files {
             case XML -> fileName = getChatID() + "/" + file + ".xml";
             //case XSD -> fileName = getChatID() + "/" + file + ".xsd";
             case ZIP -> fileName = file + ".zip";
-            case SCH -> fileName = getCurrentSEMDcode() + "/" + file + ".sch";
+            case SCH -> fileName = getCurrentSEMDcode() + "/" + getCurrentSEMDcode() + ".sch";
             default -> throw new IllegalStateException("Unexpected value: " + docType.getType().toString());
         }
         File f = new File(fileName);
         if (docType.getType().equals(Type.XML)) {
             setName_XML(file + ".xml");
-        } else if (docType.getType().equals(Type.SCH)) {
-            setSchematron(file + ".sch");
         }
         FileUtils.copyURLToFile(urlFile, f);
         System.out.println("Create file: " + fileName);
@@ -142,7 +130,7 @@ public class Files {
     public boolean readyToChecking() {
         // if xml and semd is exists
         if (new File(getChatID() + "/" + getName_XML()).exists()) {
-            if (new File(getCurrentSEMDcode() + "/" + getCurrentSEMDcode()).exists()) {
+            if (new File(getCurrentSEMDcode()).exists()) {
                 return true;
             }
         }
@@ -192,7 +180,7 @@ public class Files {
                     filename = filename.replace(" ", "_");
                 }
                 if (ze.isDirectory()) {
-                    File directPath = new File(semdFolder + "/" + filename);
+                    File directPath = new File(filename);
                     directPath.mkdirs();
                     //System.out.println("dir:  " + filename);
                 } else if (!filename.contains("__MACOSX") && !filename.contains(".DS_Store") &&
@@ -215,8 +203,13 @@ public class Files {
 
                     } else {// it's shema or schematron
 
+                        if (fileType.equals(Type.SCH)) {
+                            filename = semdFolder +"/" +semdFolder +".sch";
+                            //System.out.println("Schematron="+filename);
+                        }
+
                         // reading and writing files
-                        FileOutputStream fout = new FileOutputStream(semdFolder + "/" + filename);
+                        FileOutputStream fout = new FileOutputStream(filename);
                         while ((count = zis.read(buffer)) != -1) {
                             byteArray.write(buffer, 0, count);
                             byte[] bytes = byteArray.toByteArray();
@@ -228,11 +221,6 @@ public class Files {
 
                         // add filename to list files
                         //this.listFiles.add(new DocType(filename, fileType));
-
-                        if (fileType.equals(Type.SCH)) {
-                            //System.out.println("Schematron="+filename);
-                            setSchematron(filename);
-                        }
                     }
                 }
             }
@@ -265,10 +253,6 @@ public class Files {
         return Type.OTHER;
     }
 
-    public boolean listFilesIsEmpty() {
-        return this.listFiles.isEmpty();
-    }
-
     /**
      * Save file to currentSEMDcode
      *
@@ -282,9 +266,8 @@ public class Files {
         }
     }
 
-    public boolean FileIsExist(String fileName) {
-        return new File(getCurrentSEMDcode() +
-                "/" + fileName).exists();
+    public boolean fileIsExist(String fileName) {
+        return new File(fileName).exists();
     }
 
     /**

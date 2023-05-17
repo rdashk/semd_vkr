@@ -22,11 +22,11 @@ public class Stax {
                 xmlr = XMLInputFactory.newInstance().createXMLStreamReader(fileName, new FileInputStream(fileName));
                 output = XMLOutputFactory.newInstance();
                 if (type.equals(Type.XML)) {
-                    writer = output.createXMLStreamWriter(new FileWriter(nameForSave+".xml"));
+                    writer = output.createXMLStreamWriter(new FileWriter(nameForSave + ".xml"));
                     writeClinicalDocumentAttr();
 
                 } else {
-                    writer = output.createXMLStreamWriter(new FileWriter(nameForSave+".sch"));
+                    writer = output.createXMLStreamWriter(new FileWriter(nameForSave + ".sch"));
                     writeSchematronAttr();
                 }
                 StaxWrite();
@@ -153,49 +153,46 @@ public class Stax {
     }
 
     /**
-     *
      * @param listErrors
      * @param fileName
      * @param currentXML
      */
-    public void errorsFilesCreate(List<String> listErrors, String fileName, String currentXML) {
+    public void errorsSchematronFilesCreate(List<String> listErrors, String fileName, String currentXML) {
         BufferedWriter writer = null;
 
         File txtFile = new File(fileName + ".txt");
-        System.out.println("list errors="+listErrors);
+        System.out.println("list errors=" + listErrors);
 
-        String[] errors = new String[3];
-        String[] descrErrors = new String[3];
-
-        errors[0] = "providerOrganization";
-        errors[1] = "telecom";
-        errors[2] = "author";
-
-        descrErrors[0] = "Core06-1. Элемент //identity:Props должен иметь 1 элемент identity:Ogrnip.";
-        descrErrors[1] = "descr 2";
-        descrErrors[2] = "author!";
-
-        /*
-            BufferedWriter writer = new BufferedWriter(new FileWriter(ans, true));
-
-            for (String mes: r.getValidationMessages()) {
-                // mes = String.format("%s %s %s", element.getLocalName(), element.getAttribute("location"), element.getTextContent());
-                int end1 = mes.indexOf(" ");
-                String s1 = mes.substring(0, end1);
-                mes = mes.substring(end1+1);
-                end1 = mes.indexOf(" ");
-
-                writer.append("element.getLocalName = "+s1+
-                        "\nelement.getAttribute(\"location\") = "+mes.substring(0, end1)+
-                        "\nelement.getTextContent() = "+mes.substring(end1+1)+
-                        "\n----\n");
-            }
-            writer.close();*/
+        String[] errors = new String[listErrors.size()];
+        String[] descrErrors = new String[listErrors.size()];
 
         try {
             writer = new BufferedWriter(new FileWriter(txtFile, false));
-            xmlr = XMLInputFactory.newInstance().createXMLStreamReader(currentXML, new FileInputStream(currentXML));
 
+            for (int i = 0; i < listErrors.size(); i++) {
+                // mes = String.format("%s %s %s", element.getLocalName(), element.getAttribute("location"), element.getTextContent());
+                String mes = listErrors.get(i);
+                int end1 = mes.indexOf(" ");
+                String s1 = mes.substring(0, end1);
+                mes = mes.substring(end1 + 1);
+                end1 = mes.indexOf(" ");
+
+                writer.append(s1 +
+                        "\nlocation:    " + mes.substring(0, end1) +
+                        "\ndescription: " + mes.substring(end1 + 1) +
+                        "\n----\n");
+
+
+                // TODO: change it to normal path
+                String[] arr = mes.substring(0, end1).replace("[1]","").split("/Q");
+                errors[i] = arr[arr.length-1];
+
+                descrErrors[i] = mes.substring(end1 + 1);
+
+            }
+            writer.close();
+
+            xmlr = XMLInputFactory.newInstance().createXMLStreamReader(currentXML, new FileInputStream(currentXML));
             Document document = new Document();
             PdfWriter.getInstance(document, new FileOutputStream(fileName + ".pdf"));
             document.open();
@@ -232,15 +229,14 @@ public class Stax {
                         }
                         str.append(">");
 
-                        if (ind < errors.length && xmlr.getLocalName().equals(errors[ind])) {
+                        if (ind < errors.length && xmlr.getName().toString().equals(errors[ind])) {
 
                             currentColor = BaseColor.PINK;
                             chunk = new Chunk("Строка №" + xmlr.getLocation().getLineNumber() +
-                                    "\n"+ descrErrors[ind]+"\n", new Font(baseFont, 9, Font.NORMAL));
+                                    "\n" + descrErrors[ind] + "\n", new Font(baseFont, 9, Font.NORMAL));
                             chunk.getFont().setColor(BaseColor.RED);
                             paragraph.add(chunk);
 
-                            writer.append(errors[ind]+"\n");
                             ind++;
                         }
                         chunk = new Chunk("<" + str.toString(), font);
@@ -272,7 +268,7 @@ public class Stax {
                         chunk.setBackground(currentColor);
                         chunk.getFont().setColor(BaseColor.BLUE);
                         paragraph.add(chunk);
-                        if (endInd < errors.length && xmlr.getLocalName().equals(errors[endInd])) {
+                        if (endInd < errors.length && xmlr.getName().toString().equals(errors[endInd])) {
                             currentColor = BaseColor.WHITE;
                             endInd = ind;
                         }
@@ -283,11 +279,29 @@ public class Stax {
 
             document.add(paragraph);
             document.close();
-            writer.close();
+
         } catch (IOException | DocumentException e) {
             System.out.println(e.getMessage());
         } catch (XMLStreamException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public void errorsSchemaFileCreate(List<String> listErrors, String fileName) {
+        BufferedWriter writer = null;
+
+        File txtFile = new File(fileName + ".txt");
+
+        try {
+            writer = new BufferedWriter(new FileWriter(txtFile, false));
+
+            for (String s: listErrors) {
+
+                writer.append(s+"\n");
+            }
+            writer.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
         }
     }
 }

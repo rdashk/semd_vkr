@@ -1,20 +1,21 @@
 package ru.isu.controller;
 
 import name.dmaus.schxslt.SchematronException;
+import org.springframework.web.bind.annotation.RestController;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.model.DocType;
 import ru.isu.model.Files;
 import ru.isu.model.Node;
+import ru.isu.model.db.Semd;
 import ru.isu.model.enums.Type;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import static ru.isu.model.enums.Type.*;
-import static ru.isu.model.enums.Type.ZIP;
 
+@RestController
 public class FileController {
     Files files = new Files();
 
@@ -47,17 +48,6 @@ public class FileController {
                     //return "<b>Список доступных файлов</b>\n\n" + toMessageString(list from DB);
                     return "<b>Список доступных файлов</b>\n\n";
                 }
-            }
-
-            case "/listSEMD" -> {
-                /**
-                 * TODO: From bd get all SEMDs with codes and titles and data
-                 * if semds aren't exist in DB send
-                 * telegramBot.sendMessage(message.getChatId(), "СЭМД отсутствуют в системе. " + DESCR_ADD_ZIP);
-                 */
-                List<String> test_list = new ArrayList<>();
-                test_list.add("SEMD_1");test_list.add("SEMD_2");test_list.add("SEMD_3");
-                return "<b>Список доступных СЭМД</b>\n\n" + toMessageString(test_list);
             }
 
             case "/currentSEMD" -> {
@@ -106,13 +96,15 @@ public class FileController {
      *
      * @return numbered list of file path
      */
-    public String toMessageString(List<String> list) {
+    public String getListSemd(List<Semd> list) {
         String answer = "";
-        int i = 1;
-        for (String f : list) {
-            answer += (i++) + ". " + f + "\n";
+        for (Semd s : list) {
+            answer += s.getCode() + ". " + s.getName() + "\n";
         }
-        return answer;
+        if (answer.isEmpty()) {
+            return "Список СЭМД пустой!";
+        }
+        return "<b>Список доступных СЭМД</b>\n\n"+answer;
     }
 
     public String getDocument(Update update) {
@@ -178,10 +170,9 @@ public class FileController {
         
         if (files.getCurrentSEMDcode().isEmpty()) {
             return DESCR_ADD_XML;
-        } else if (!files.FileIsExist(files.getCurrentSEMDcode()+"/"+files.getCurrentSEMDcode())) {
+        } else if (!files.fileIsExist(files.getCurrentSEMDcode())) {
             return DESCR_ADD_ZIP;
         }
         return "Загрузите xml-документ и выберете СЭМД";
     }
-
 }

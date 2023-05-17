@@ -155,6 +155,7 @@ public class BotController implements AnswerFromFileHandler {
         //System.out.println(pathFilesWithErrors.toString());
         if (!pathFilesWithErrors.isEmpty()) {
             telegramBot.sendFile(Long.parseLong(message.getChatId()), pathFilesWithErrors);
+
             deleteFolder(message.getChatId()+"/errors");
         }
     }
@@ -173,8 +174,7 @@ public class BotController implements AnswerFromFileHandler {
         List<String> files = new ArrayList<>();
         if (new File(folder).exists()) {
 
-            if (new File(folder+"/errors_shema.pdf").exists()) {
-                files.add(folder+"/errors_shema.pdf");
+            if (new File(folder+"/errors_shema.txt").exists()) {
                 files.add(folder+"/errors_shema.txt");
             }
             if (new File(folder+"/errors_schematron.pdf").exists()) {
