@@ -3,6 +3,7 @@ package ru.isu.controller;
 import name.dmaus.schxslt.SchematronException;
 import org.springframework.web.bind.annotation.RestController;
 import org.telegram.telegrambots.meta.api.objects.Document;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.model.DocType;
 import ru.isu.model.Files;
@@ -27,7 +28,6 @@ public class FileController {
             "\nДля проверки на соответствие схематрону - наличие файла(<b>sch</b>).";
     final String DESCR_GET_XML = "Файл <b>xml</b> успешно загружен! ";
     final String DESCR_GET_SCH = "Файл <b>sch</b> успешно загружен!";
-    final String DESCR_GET_ZIP = "Архив СЭМД успешно загружен!";
     final String DESCR_CHECK = "\n\n<b>Команды:</b>\n\n" +
             "/checkXML - выполнение проверки xml-документа на соответствие шаблонам и схематрону\n" +
             "/checkXML_body - выполнение проверки <b>тела</b> xml-документа на соответствие схематрону";
@@ -40,25 +40,6 @@ public class FileController {
         String messageText = update.getMessage().getText().toString();
         
         switch (messageText) {
-            case "/listFiles" -> {
-                if (files.getCurrentSEMDcode().isEmpty()) {
-                    return DESCR_SEMD;
-                } else {
-                    // TODO: get files from DB
-                    //return "<b>Список доступных файлов</b>\n\n" + toMessageString(list from DB);
-                    return "<b>Список доступных файлов</b>\n\n";
-                }
-            }
-
-            case "/currentSEMD" -> {
-                if (!files.getCurrentSEMDcode().isEmpty() && !files.getCurrentSEMDtitle().isEmpty()) {
-                    return "\nТекущий СЭМД =" + files.getCurrentSEMDtitle() +" (код "+files.getCurrentSEMDcode() + ").";
-                }
-                if (!files.getCurrentSEMDcode().isEmpty()) {
-                    return "Текущий код СЭМД = " + files.getCurrentSEMDcode() + ".";
-                }
-                return DESCR_SEMD;
-            }
 
             case "/checkXML" -> {
                 try {
@@ -80,7 +61,7 @@ public class FileController {
                 String chatId = files.getChatID();
                 if (chatId.isEmpty()) return "xml-документ отсутствует в системе!";
                 try {
-                    // delete all users files from his folder
+                    // delete all files from user folder
                     files.deleteFolder(chatId);
                     return "xml-документ успешно удален.";
                 } catch (IOException e) {
@@ -107,55 +88,6 @@ public class FileController {
         return "<b>Список доступных СЭМД</b>\n\n"+answer;
     }
 
-    public String getDocument(Update update) {
-        Document doc = update.getMessage().getDocument();
-        System.out.println("doc name="+doc.getFileName());
-        String fileName = "";
-        String path = update.getMessage().getText();
-        Type type = XML;
-        switch (doc.getMimeType()) {
-            case "text/xml" -> {type = XML;}
-            case "application/octet-stream" -> {
-                if (path.contains(".xsd")) {
-                    type = XSD;
-                } else {
-                    type = SCH;
-                }
-            }
-            case "application/zip" -> {
-                type = ZIP;
-                fileName = doc.getFileName().substring(0, doc.getFileName().indexOf(".zip"));
-            }
-        }
-        
-        DocType docType = new DocType(fileName, path, type);
-        String chatId = update.getMessage().getChatId().toString();
-
-        files.setChatID(chatId);
-        if (type == XML || type == SCH) {
-            files.saveNewFile(docType);
-
-            if (type.equals(SCH)) {
-                return DESCR_GET_SCH;
-            } else {
-                files.setCurrentSEMDcode(Node.getAttributeValue(chatId+"/"+files.getName_XML(), "ClinicalDocument/code/@code"));
-                // TODO: get SEMD folder from DB using current SEMD code
-                // if (SEMD folder from DB isn't exist) return return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_ADD_ZIP
-                // else
-                    return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_CHECK;
-            }
-        }
-
-        try {
-            files.unpackZip(docType);
-            //TODO: save to db
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-
-        return DESCR_GET_ZIP;
-    }
-
     /**
      * User have all files and can get conformity check
      */
@@ -174,5 +106,75 @@ public class FileController {
             return DESCR_ADD_ZIP;
         }
         return "Загрузите xml-документ и выберете СЭМД";
+    }
+
+    public Type getDocType(Message message) {
+        Document doc = message.getDocument();
+        System.out.println("doc name="+doc.getFileName()+"\npath="+message.getText());
+        switch (doc.getMimeType()) {
+            case "text/xml" -> {return XML;}
+            case "application/octet-stream" -> {
+                if (message.getText().contains(".xsd")) {
+                    return XSD;
+                } else {
+                    return SCH;
+                }
+            }
+            case "application/zip" -> {
+                return ZIP;
+            }
+        }
+        return OTHER;
+    }
+
+    public Semd getZip(DocType docType) {
+        try {
+            return files.unpackZip(docType);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        return new Semd();
+    }
+
+    public String getXml(Message message) {
+        String chatId = message.getChatId().toString();
+        files.setChatID(chatId);
+        DocType docType = new DocType("", message.getText(), XML);
+        files.saveNewFile(docType);
+
+        files.setCurrentSEMDcode(Node.getAttributeValue(chatId+"/"+files.getName_XML(), "ClinicalDocument/code/@code"));
+        return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_CHECK;
+    }
+
+    //TODO: must save to db (not users folder)
+    public String getSch(Message message) {
+        String chatId = message.getChatId().toString();
+        files.setChatID(chatId);
+        DocType docType = new DocType("", message.getText(), SCH);
+        files.saveNewFile(docType);
+
+        return DESCR_GET_SCH;
+    }
+
+    public String getSemdCode() {
+        return files.getCurrentSEMDcode();
+    }
+
+    public String getListFiles(List<String> list) {
+        String answer = "";
+        for (String s : list) {
+            answer += getSemdCode() + ". " + s + "\n";
+        }
+        if (answer.isEmpty()) {
+            return "Список СЭМД пустой!";
+        }
+        return "<b>Список файлов в СЭМД (код = "+getSemdCode()+")</b>\n\n"+answer;
+    }
+
+    public List<String> getFilesFromZip() {
+        List<String> list = files.getPathList();
+        //files.getPathList().clear();
+        System.out.println(list.toString());
+        return list;
     }
 }

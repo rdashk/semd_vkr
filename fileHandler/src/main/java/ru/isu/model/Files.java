@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
+import ru.isu.model.db.Semd;
 import ru.isu.model.enums.Type;
 import ru.isu.model.validation.SEMDvalidator;
 
@@ -22,10 +23,10 @@ import java.util.zip.ZipInputStream;
 @Getter
 @Setter
 public class Files {
+
+    List<String> pathList = new ArrayList<>();
     private String name_XML = "";
     private String currentSEMDcode = "";
-    private String currentSEMDtitle = "";
-    private List<DocType> listFiles = new ArrayList<>();
     private String chatID = "";
     private SEMDvalidator validator;
     private Stax stax;
@@ -138,29 +139,18 @@ public class Files {
     }
 
     /**
-     * Checking for exists file witch contains name in file name
-     *
-     * @param name file name
-     * @return full file name
-     */
-    private String getFileFromName(String name) {
-        for (DocType file : getListFiles()) {
-            if (file.getFilePath().contains(name)) {
-                return file.getFilePath();
-            }
-        }
-        return "";
-    }
-
-    /**
      * Unpacking archive and saving all files from it
      *
      * @return manage to do unpacking
      * @throws IOException
      */
-    public boolean unpackZip(DocType docType) throws IOException {
+    public Semd unpackZip(DocType docType) throws IOException {
         String zipFolder = createFileFromURL(docType);
-        String semdFolder = docType.getFileName();
+        String semdCode = docType.getFileName();
+        String currentSemdTitle = "";
+
+        File directPath = new File(semdCode);
+        directPath.mkdirs();
 
         InputStream is;
         ZipInputStream zis;
@@ -179,11 +169,19 @@ public class Files {
                 if (filename.contains(" ")) {
                     filename = filename.replace(" ", "_");
                 }
-                if (ze.isDirectory()) {
-                    File directPath = new File(filename);
-                    directPath.mkdirs();
-                    //System.out.println("dir:  " + filename);
-                } else if (!filename.contains("__MACOSX") && !filename.contains(".DS_Store") &&
+                if (filename.contains("/")) {
+                    String[] arr = filename.split("/");
+                    String path = arr[0]+"/";
+                    for (int i=1;i<arr.length-1;i++) {
+                        path+=arr[i]+"/";
+                    }
+                    if (!new File(path).exists()) {
+                        directPath = new File(path);
+                        directPath.mkdirs();
+                        //System.out.println("new dir:  " + path);
+                    }
+                }
+                if (!filename.contains("__MACOSX") && !filename.contains(".DS_Store") &&
                         !getFileType(filename).equals(Type.OTHER)) {
 
                     //System.out.println("file:  " + filename);
@@ -196,15 +194,20 @@ public class Files {
                         while ((count = zis.read(buffer)) != -1) {
                             byteArray.write(buffer, 0, count);
                             byte[] bytes = byteArray.toByteArray();
-                            setCurrentSEMDtitle(new String(bytes, "UTF-8"));
+                            currentSemdTitle = new String(bytes, "UTF-8");
+                            //setCurrentSEMDtitle(new String(bytes, "UTF-8"));
                             byteArray.reset();
                         }
                         zis.closeEntry();
 
-                    } else {// it's shema or schematron
+                    }
+                    else {// it's shema or schematron
+
+                        //for save to db
+                        pathList.add(filename);
 
                         if (fileType.equals(Type.SCH)) {
-                            filename = semdFolder +"/" +semdFolder +".sch";
+                            filename = semdCode +"/" + semdCode +".sch";
                             //System.out.println("Schematron="+filename);
                         }
 
@@ -219,18 +222,16 @@ public class Files {
                         fout.close();
                         zis.closeEntry();
 
-                        // add filename to list files
-                        //this.listFiles.add(new DocType(filename, fileType));
                     }
                 }
             }
             zis.close();
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
+            return new Semd();
         }
         deleteFolder(zipFolder);
-        return true;
+        return new Semd(Long.parseLong(semdCode), currentSemdTitle);
     }
 
     /**
