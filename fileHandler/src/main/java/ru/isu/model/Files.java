@@ -12,7 +12,6 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -235,10 +234,7 @@ public class Files {
             return new Semd();
         }
         deleteFolder(zipFolder);
-        Date date = new Date();
-        SimpleDateFormat DateFor = new SimpleDateFormat("MM.yyyy");
-        String stringDate= DateFor.format(date);
-        return new Semd(Long.parseLong(semdCode), currentSemdTitle, stringDate);
+        return new Semd(Long.parseLong(semdCode), currentSemdTitle, new Date());
     }
 
     /**

@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,5 +19,15 @@ public class Semd {
     @Id
     private Long code;
     private String name;
-    private String date;
+    private Date date;
+
+    /**
+     * get string date = MM.yyyy
+     * @return string date = MM.yyyy
+     */
+    public String getStringDate() {
+        Date date = this.date;
+        SimpleDateFormat DateFor = new SimpleDateFormat("MM.yyyy");
+        return DateFor.format(date);
+    }
 }

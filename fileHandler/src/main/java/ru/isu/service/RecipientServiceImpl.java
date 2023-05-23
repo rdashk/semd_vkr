@@ -59,7 +59,7 @@ public class RecipientServiceImpl implements RecipientService {
         String command = answer.getMessage();
 
         if (command.equals("/listSEMD")) {
-            textToSend = fileController.getAllSemds(semdRepository.findAll());
+            textToSend = fileController.getAllSemds(semdRepository.getAll());
         } else if (command.equals("/listFiles")) {
             if (fileController.getSemdCode().isEmpty()) {
                 textToSend = DESCR_SEMD;
@@ -113,8 +113,10 @@ public class RecipientServiceImpl implements RecipientService {
                             "и загрузите его еще раз!" + DESCR_ADD_ZIP;
                 } else {
                     textToSend = DESCR_GET_ZIP;
-                    semdRepository.save(semd);
-
+                    Semd semdFromTable = semdRepository.getSemdByCode(semd.getCode());
+                    if (semdFromTable == null || semdFromTable.getDate().before(semd.getDate())) {
+                        semdRepository.save(semd);
+                    }
                     // save all files from folder to db
                     // TODO: builder?
                     for (String filePath : fileController.getFilesFromZip()) {
@@ -144,7 +146,7 @@ public class RecipientServiceImpl implements RecipientService {
     public void getWebMessage(Answer answer) {
         String textToSend = "";
         if (answer.getMessage().equals("/listSEMD")) {
-            textToSend = fileController.getAllSemdsForTable(semdRepository.findAll());
+            textToSend = fileController.getAllSemdsForTable(semdRepository.getAll());
         }
         sender.send(WEB_ANSWER_MESSAGE, new Answer(answer.getChatId(), textToSend));
     }

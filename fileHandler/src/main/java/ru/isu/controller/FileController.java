@@ -76,7 +76,7 @@ public class FileController {
     public String getAllSemds(List<Semd> list) {
         String answer = "";
         for (Semd s : list) {
-            answer += s.getCode() + ". " + s.getName() + "("+s.getDate()+")\n";
+            answer += s.getCode() + ". " + s.getName() + "("+s.getStringDate()+")\n";
         }
         if (answer.isEmpty()) {
             return "Список СЭМД пустой!";
@@ -92,7 +92,7 @@ public class FileController {
     public String getAllSemdsForTable(List<Semd> list) {
         String answer = "";
         for (Semd s : list) {
-            answer += s.getCode() + "}" + s.getName() + "}" + s.getDate()+"!";
+            answer += s.getCode() + "}" + s.getName() + "}" + s.getStringDate()+"!";
         }
         return answer;
     }

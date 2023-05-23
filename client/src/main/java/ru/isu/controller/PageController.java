@@ -16,7 +16,7 @@ import static ru.isu.model.RabbitQueue.WEB_MESSAGE;
 @Component
 @Controller
 public class PageController {
-    List<TableItem> semds;
+    List<TableItem> semds = new ArrayList<>();
 
     private final SenderToRabbitMQ sender;
 
