@@ -1,10 +1,7 @@
-package ru.isu.controller;
+package ru.isu.config;
 
 import lombok.Data;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import ru.isu.service.*;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
@@ -19,7 +16,7 @@ public class BotConfig {
     @Value("${service.file_storage.uri}")
     private String fileStorageUri;
 
-    @Bean
+    /*@Bean
     TelegramFileService getFileService() {
         return new TelegramFileServiceImpl();
     }
@@ -27,10 +24,5 @@ public class BotConfig {
     @Bean
     SenderToRabbitMQ getSenderToRabbitMQ(RabbitTemplate rabbitTemplate) {
         return new SenderToRabbitMQImpl(rabbitTemplate);
-    }
-
-    /*@Bean
-    public AnswerFromFileHandler getAnswerFromFileHandler(RabbitTemplate r) {
-        return new AnswerFromFileHandlerImpl(new BotController(new TelegramFileServiceImpl(), new SenderToRabbitMQImpl(r)));
     }*/
 }

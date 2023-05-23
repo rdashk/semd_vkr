@@ -3,6 +3,7 @@ package ru.isu.service;
 import org.json.JSONObject;
 import org.jvnet.hk2.annotations.Service;
 import org.springframework.http.*;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -14,6 +15,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 @Service
+@Component
 public class TelegramFileServiceImpl implements TelegramFileService {
 
     //@Value("${bot.username}")

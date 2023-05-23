@@ -2,9 +2,11 @@ package ru.isu.service;
 
 import org.jvnet.hk2.annotations.Service;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.springframework.stereotype.Component;
+import ru.isu.model.Answer;
 
 @Service
+@Component
 public class SenderToRabbitMQImpl implements SenderToRabbitMQ{
 
     private RabbitTemplate rabbitTemplate;
@@ -14,7 +16,7 @@ public class SenderToRabbitMQImpl implements SenderToRabbitMQ{
     }
 
     @Override
-    public void send(String rabbitMQ, Update update) {
-        rabbitTemplate.convertAndSend(rabbitMQ, update);
+    public void send(String rabbitMQ, Answer answer) {
+        rabbitTemplate.convertAndSend(rabbitMQ, answer);
     }
 }

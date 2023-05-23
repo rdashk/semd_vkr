@@ -2,9 +2,6 @@ package ru.isu.controller;
 
 import name.dmaus.schxslt.SchematronException;
 import org.springframework.web.bind.annotation.RestController;
-import org.telegram.telegrambots.meta.api.objects.Document;
-import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.model.DocType;
 import ru.isu.model.Files;
 import ru.isu.model.Node;
@@ -36,9 +33,8 @@ public class FileController {
             "при загрузке вашего xml-документа.\nДля просмотра списка доступных СЭМД команда /listSEMD ";
 
 
-    public String getText(Update update) {
-        String messageText = update.getMessage().getText().toString();
-        
+    public String getText(String messageText) {
+
         switch (messageText) {
 
             case "/checkXML" -> {
@@ -82,10 +78,7 @@ public class FileController {
         for (Semd s : list) {
             answer += s.getCode() + ". " + s.getName() + "\n";
         }
-        if (answer.isEmpty()) {
-            return "Список СЭМД пустой!";
-        }
-        return "<b>Список доступных СЭМД</b>\n\n"+answer;
+        return answer;
     }
 
     /**
@@ -108,13 +101,12 @@ public class FileController {
         return "Загрузите xml-документ и выберете СЭМД";
     }
 
-    public Type getDocType(Message message) {
-        Document doc = message.getDocument();
-        System.out.println("doc name="+doc.getFileName()+"\npath="+message.getText());
-        switch (doc.getMimeType()) {
+    public Type getDocType(String mimeType, String docPath) {
+        System.out.println("path="+docPath);
+        switch (mimeType) {
             case "text/xml" -> {return XML;}
             case "application/octet-stream" -> {
-                if (message.getText().contains(".xsd")) {
+                if (docPath.contains(".xsd")) {
                     return XSD;
                 } else {
                     return SCH;
@@ -136,10 +128,9 @@ public class FileController {
         return new Semd();
     }
 
-    public String getXml(Message message) {
-        String chatId = message.getChatId().toString();
+    public String getXml(String chatId, String text) {
         files.setChatID(chatId);
-        DocType docType = new DocType("", message.getText(), XML);
+        DocType docType = new DocType("", text, XML);
         files.saveNewFile(docType);
 
         files.setCurrentSEMDcode(Node.getAttributeValue(chatId+"/"+files.getName_XML(), "ClinicalDocument/code/@code"));
@@ -147,10 +138,9 @@ public class FileController {
     }
 
     //TODO: must save to db (not users folder)
-    public String getSch(Message message) {
-        String chatId = message.getChatId().toString();
+    public String getSch(String chatId, String text) {
         files.setChatID(chatId);
-        DocType docType = new DocType("", message.getText(), SCH);
+        DocType docType = new DocType("", text, SCH);
         files.saveNewFile(docType);
 
         return DESCR_GET_SCH;

@@ -12,6 +12,7 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -231,7 +232,7 @@ public class Files {
             return new Semd();
         }
         deleteFolder(zipFolder);
-        return new Semd(Long.parseLong(semdCode), currentSemdTitle);
+        return new Semd(Long.parseLong(semdCode), currentSemdTitle, new Date());
     }
 
     /**

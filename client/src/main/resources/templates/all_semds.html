@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>semd</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body class="w3-light-grey">
+
+<!-- Top -->
+<div class="w3-bar w3-top w3-black w3-large" style="z-index:4">
+    <button class="w3-bar-item w3-button w3-hide-large w3-hover-none w3-hover-text-light-grey" onclick="w3_open();"><i class="fa fa-bars"></i>Menu</button>
+    <span class="w3-bar-item">Проверка на соответствие СЭМД</span>
+</div>
+
+<!-- Sidebar/menu -->
+<nav class="w3-sidebar w3-collapse w3-white w3-animate-left" style="z-index:3;width:300px;" id="mySidebar"><br>
+    <div class="w3-container w3-row">
+        <div class="w3-col s4">
+            <!--<img src="/w3images/avatar2.png" class="w3-circle w3-margin-right" style="width:46px">-->
+        </div>
+        <div class="w3-col s8 w3-bar" th:text="'Привет, ' + ${name} + '!'">
+            <a href="#" class="w3-bar-item w3-button"><i class="fa fa-envelope"></i></a>
+            <a href="#" class="w3-bar-item w3-button"><i class="fa fa-cog"></i></a>
+        </div>
+    </div>
+    <hr>
+    <div class="w3-container">
+        <h5>Меню</h5>
+    </div>
+    <div class="w3-bar-block">
+        <a th:href="@{home}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-eye fa-fw"></i>На главную</a>
+        <a th:href="@{all_semds}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-bell fa-fw"></i>Все СЭМД</a>
+        <a href="#" class="w3-bar-item w3-button w3-padding"><i class="fa fa-cog fa-fw"></i>Пользователи</a><br><br>
+    </div>
+</nav>
+
+<!-- PAGE -->
+<div style="margin-left:300px;margin-top:43px;padding:20px">
+    <div class="w3-container">
+        <h5>Все СЭМД</h5>
+
+        <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
+            <thead>
+            <tr>
+                <th> Код </th>
+                <th> Дата </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${semds.isEmpty()}">
+                <td colspan="2"> Нет ни одного СЭМД </td>
+            </tr>
+            <tr th:each="semd : ${semds}">
+                <td><span th:text="${semd}"> код </span></td>
+                <td><span > дата </span></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w3-container w3-padding-16 w3-light-grey w3-bottom">
+        <h4>FOOTER</h4>
+        <p>Made by <a href="https://vk.com/dariaaraz">me</a></p>
+    </footer>
+
+    <!-- End page -->
+</div>
+
+<script>
+    // Get the Sidebar
+    var mySidebar = document.getElementById("mySidebar");
+
+    // Get the DIV with overlay effect
+    var overlayBg = document.getElementById("myOverlay");
+
+    // Toggle between showing and hiding the sidebar, and add overlay effect
+    function w3_open() {
+        if (mySidebar.style.display === 'block') {
+            mySidebar.style.display = 'none';
+            overlayBg.style.display = "none";
+        } else {
+            mySidebar.style.display = 'block';
+            overlayBg.style.display = "block";
+        }
+    }
+</script>
+
+</body>
+</html>

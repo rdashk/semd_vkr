@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-        <module>bot</module>
+        <module>client</module>
         <module>rabbitMq</module>
         <module>fileHandler</module>
     </modules>

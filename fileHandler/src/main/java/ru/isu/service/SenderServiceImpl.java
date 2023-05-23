@@ -3,10 +3,7 @@ package ru.isu.service;
 import org.jvnet.hk2.annotations.Service;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-
-import static ru.isu.model.RabbitQueue.ANSWER_MESSAGE;
-import static ru.isu.model.RabbitQueue.VALID_MESSAGE;
+import ru.isu.model.Answer;
 
 /**
  * Install listener for every queue in RabbitMQ
@@ -21,12 +18,8 @@ public class SenderServiceImpl implements SenderService{
     }
 
     @Override
-    public void sendTextMessage(SendMessage sendMessage) {
-        rabbitTemplate.convertAndSend(ANSWER_MESSAGE, sendMessage);
+    public void send(String rabbitMQName, Answer answer) {
+        rabbitTemplate.convertAndSend(rabbitMQName, answer);
     }
 
-    @Override
-    public void sendValidMessage(SendMessage sendMessage) {
-        rabbitTemplate.convertAndSend(VALID_MESSAGE, sendMessage);
-    }
 }

@@ -1,12 +1,11 @@
 package ru.isu.controller;
 
 import org.apache.commons.io.FileUtils;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import ru.isu.service.AnswerFromFileHandler;
+import ru.isu.model.Answer;
 import ru.isu.service.SenderToRabbitMQ;
 import ru.isu.service.TelegramFileService;
 
@@ -15,13 +14,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static ru.isu.model.RabbitQueue.*;
+import static ru.isu.model.RabbitQueue.DOC_MESSAGE;
+import static ru.isu.model.RabbitQueue.TEXT_MESSAGE;
 
 /**
  * All action with telegram bot
  */
 @Component
-public class BotController implements AnswerFromFileHandler {
+public class BotController{// implements AnswerFromFileHandler {
 
     private TelegramBot telegramBot;
     final String DESCR_BOT = "\n\nЭто бот для проверки XML-документа на соответствие СЭМД\n\n<b>Команды:</b>\n\n" +
@@ -31,8 +31,8 @@ public class BotController implements AnswerFromFileHandler {
             "/listFiles - список доступных файлов текущего СЭМД\n" +
             "/currentSEMD - текущий СЭМД\n" +
             "/checkXML - проверка xml-документа\n" +
-            "/checkXML_body - проверки <b>тела</b> xml-документа\n" +
-            "/deleteMyXML - удалить загруженный xml-документ";
+            "/checkXML_body - проверка только <b>тела</b> xml-документа\n" +
+            "/deleteMyXML - удалить папку пользователя";
 
     private final TelegramFileService fileService;
     private final SenderToRabbitMQ sender;
@@ -112,7 +112,7 @@ public class BotController implements AnswerFromFileHandler {
 
             default: {
                 createSendMessage(update, "Обрабатываю команду...");
-                sender.send(TEXT_MESSAGE_UPDATE, update);
+                sender.send(TEXT_MESSAGE, new Answer(message.getChatId().toString(), messageText));
             }
         }
 
@@ -135,8 +135,8 @@ public class BotController implements AnswerFromFileHandler {
         }
         else {
             // send file types: XSD, SCH, XML, ZIP
-            update.getMessage().setText(telegramFilePath);
-            sender.send(DOC_MESSAGE_UPDATE, update);
+            //update.getMessage().setText(telegramFilePath);
+            sender.send(DOC_MESSAGE, new Answer(update.getMessage().getChatId().toString(), telegramFilePath));
         }
     }
 
@@ -149,6 +149,7 @@ public class BotController implements AnswerFromFileHandler {
     }
 
     public void createValidMessage(SendMessage message) {
+
         telegramBot.sendMessage(Long.parseLong(message.getChatId()), message.getText().toString());
         // if found some errors
         List<String> pathFilesWithErrors = hasError(message.getChatId().toString()+"/errors");
@@ -191,7 +192,7 @@ public class BotController implements AnswerFromFileHandler {
         return files;
     }
 
-    @Override
+    /*@Override
     @RabbitListener(queues = ANSWER_MESSAGE)
     public void getAnswerFromRabbitMQ(SendMessage sendMessage) {
 
@@ -203,5 +204,5 @@ public class BotController implements AnswerFromFileHandler {
     public void getValidFromRabbitMQ(SendMessage sendMessage) {
 
         createValidMessage(sendMessage);
-    }
+    }*/
 }

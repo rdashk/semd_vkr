@@ -1,13 +1,11 @@
 package ru.isu.service;
 
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import ru.isu.model.Answer;
 
 /**
  * Send result working with files
  */
 public interface SenderService {
-    void sendTextMessage(SendMessage sendMessage);
-
-    void sendValidMessage(SendMessage sendMessage);
+    void send(String rabbitMQName, Answer answer);
 
 }

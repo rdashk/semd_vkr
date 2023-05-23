@@ -18,9 +18,12 @@ public class FileSemd {
 
     String path;
     Long code;
+    @Column(columnDefinition = "bytea")
+    byte[] content;
 
-    public FileSemd(Long code, String path) {
+    public FileSemd(Long code, String path, byte[] bytes) {
         this.code = code;
         this.path = path;
+        this.content = bytes;
     }
 }

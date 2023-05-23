@@ -8,6 +8,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.controller.FileController;
+import ru.isu.model.Answer;
 import ru.isu.model.DocType;
 import ru.isu.model.db.FileSemd;
 import ru.isu.model.db.Semd;
@@ -15,21 +16,24 @@ import ru.isu.model.enums.Type;
 import ru.isu.repository.FileSemdRepository;
 import ru.isu.repository.SemdRepository;
 
-import static ru.isu.model.RabbitQueue.DOC_MESSAGE_UPDATE;
-import static ru.isu.model.RabbitQueue.TEXT_MESSAGE_UPDATE;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static ru.isu.model.RabbitQueue.*;
 
 @Service
 @Component
 public class RecipientServiceImpl implements RecipientService {
 
     final String DESCR_GET_ZIP = "Архив СЭМД успешно загружен!";
-    final String DESCR_ADD_ZIP = "\nЗагрузите архив СЭМД (имя архива = <b>КОД_СЭМД.zip</b>).В архиве обязательно наличие:" +
+    final String DESCR_ADD_ZIP = "\nЗагрузите архив СЭМД (имя архива = <b>КОД_СЭМД.zip</b>). " +
+            "В архиве обязательно наличие:" +
             "1) шаблов(<b>xsd</b>)" +
             "2) текстового документа с названием СЭМД." +
             "\nДля проверки на соответствие схематрону - наличие файла(<b>sch</b>).";
     final String DESCR_SEMD = "CЭМД не выбран. \nВыбор СЭМД осуществляется автоматически " +
             "при загрузке вашего xml-документа.\nДля просмотра списка доступных СЭМД команда /listSEMD ";
-
 
 
     private final SenderService sender;
@@ -46,55 +50,60 @@ public class RecipientServiceImpl implements RecipientService {
     }
 
     @Override
-    @RabbitListener(queues = TEXT_MESSAGE_UPDATE)
-    public void getTextMessage(Update update) {
+    @RabbitListener(queues = TEXT_MESSAGE)
+    public void getTextMessage(Answer answer) {
         //System.out.println("RecipientServiceImpl:get text message");
 
-        var message = update.getMessage();
-        var sendMessage = new SendMessage();
-        sendMessage.setChatId(message.getChatId().toString());
+        var chatId = answer.getChatId();
         String textToSend = "";
-        String command = update.getMessage().getText();
+        String command = answer.getMessage();
 
         if (command.equals("/listSEMD")) {
             textToSend = fileController.getListSemd(semdRepository.findAll());
+            if (textToSend.isEmpty()) {
+                textToSend = "Список СЭМД пустой!";
+            } else {
+                textToSend = "<b>Список доступных СЭМД</b>\n\n"+ textToSend;
+            }
         } else if (command.equals("/listFiles")) {
             if (fileController.getSemdCode().isEmpty()) {
                 textToSend = DESCR_SEMD;
             } else {
-                textToSend = fileController.getListFiles(fileSemdRepository.getFilesSemdByCode(Long.parseLong(fileController.getSemdCode())));
+                textToSend = fileController.getListFiles(
+                        fileSemdRepository.getFilesSemdByCode(Long.parseLong(fileController.getSemdCode())));
             }
         } else if (command.equals("/currentSEMD")) {
             if (fileController.getSemdCode().isEmpty()) {
                 textToSend = DESCR_SEMD;
             } else {
-                var semdTitle = semdRepository.findById(Long.valueOf(fileController.getSemdCode())).get();
-                textToSend = "\nТекущий СЭМД =" + semdTitle.getName() +" (код "+semdTitle.getCode() + ").";
+                Semd semd = semdRepository.getSemdByCode(Long.valueOf(fileController.getSemdCode()));
+                textToSend = "\nТекущий СЭМД =" + semd.getName() + " (код " + semd.getCode() + ").";
 
             }
         } else {
-            textToSend = fileController.getText(update);
+            textToSend = fileController.getText(command);
         }
-        sendMessage.setText(textToSend);
 
         // choose type massage
         if (command.contains("/checkXML")) {
-            sender.sendValidMessage(sendMessage);
-        }else {
-            sender.sendTextMessage(sendMessage);
+            sender.send(VALID_MESSAGE, new Answer(chatId, textToSend));
+        } else {
+            sender.send(ANSWER_MESSAGE, new Answer(chatId, textToSend));
         }
     }
 
     @Override
-    @RabbitListener(queues = DOC_MESSAGE_UPDATE)
+    @RabbitListener(queues = DOC_MESSAGE)
     public void getDocMessage(Update update) {
         //System.out.println("RecipientServiceImpl:get document");
 
         var message = update.getMessage();
         var sendMessage = new SendMessage();
-        sendMessage.setChatId(message.getChatId().toString());
-
-        Type type = fileController.getDocType(update.getMessage());
+        var chatId = message.getChatId().toString();
+        sendMessage.setChatId(chatId);
+        String textToSend = "";
+        Type type = fileController.getDocType(update.getMessage().getDocument().getMimeType(),
+                update.getMessage().getText());
         switch (type) {
             case ZIP -> {
                 Document doc = update.getMessage().getDocument();
@@ -103,29 +112,46 @@ public class RecipientServiceImpl implements RecipientService {
                                 update.getMessage().getText(),
                                 type));
                 if (semd.getName().isEmpty()) {
-                    sendMessage.setText("Отсутствует файл с названием СЭМД!"+DESCR_ADD_ZIP);
+                    textToSend = "Отсутствует файл с названием СЭМД!" + DESCR_ADD_ZIP;
                 } else if (semd.equals(new Semd())) {
-                    sendMessage.setText("Произошла ошибка! Проверьте содержимое архива и загрузите его еще раз!"+DESCR_ADD_ZIP);
+                    textToSend = "Произошла ошибка! Проверьте содержимое архива " +
+                            "и загрузите его еще раз!" + DESCR_ADD_ZIP;
                 } else {
-                    sendMessage.setText(DESCR_GET_ZIP);
+                    textToSend = DESCR_GET_ZIP;
                     semdRepository.save(semd);
 
                     // save all files from folder to db
                     // TODO: builder?
-                    for (String s: fileController.getFilesFromZip()) {
-                        fileSemdRepository.save(new FileSemd(semd.getCode(), s));
+                    for (String filePath : fileController.getFilesFromZip()) {
+                        try {
+                            byte[] bytes = Files.readAllBytes(Paths.get(filePath));
+                            fileSemdRepository.save(new FileSemd(semd.getCode(), filePath, bytes));
+                        } catch (IOException e) {
+                            System.out.println(e.getMessage());
+                        }
                     }
                 }
             }
             case XML -> {
-                sendMessage.setText(fileController.getXml(update.getMessage()));
+                textToSend = fileController.getXml(update.getMessage().getChatId().toString(), update.getMessage().getText());
             }
             case SCH -> {
-                sendMessage.setText(fileController.getSch(update.getMessage()));
+                textToSend = fileController.getSch(update.getMessage().getChatId().toString(), update.getMessage().getText());
             }
-            default -> sendMessage.setText("Ошибка!");
+            default -> textToSend = "Ошибка!";
         }
 
-        sender.sendTextMessage(sendMessage);
+        sender.send(ANSWER_MESSAGE, new Answer(chatId, textToSend));
     }
+
+    @Override
+    @RabbitListener(queues = WEB_MESSAGE)
+    public void getWebMessage(Answer answer) {
+        String textToSend = "";
+        if (answer.getMessage().equals("/listSEMD")) {
+            textToSend = fileController.getListSemd(semdRepository.findAll());
+        }
+        sender.send(WEB_ANSWER_MESSAGE, new Answer(answer.getChatId(), textToSend));
+    }
+
 }

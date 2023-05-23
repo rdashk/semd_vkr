@@ -24,12 +24,12 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue textMessageQueue() {
-        return new Queue(TEXT_MESSAGE_UPDATE);
+        return new Queue(TEXT_MESSAGE);
     }
 
     @Bean
     public Queue docMessageQueue() {
-        return new Queue(DOC_MESSAGE_UPDATE);
+        return new Queue(DOC_MESSAGE);
     }
 
     @Bean
@@ -40,5 +40,13 @@ public class RabbitMQConfig {
     @Bean
     public Queue validMessageQueue() {
         return new Queue(VALID_MESSAGE);
+    }
+    @Bean
+    public Queue webMessageQueue() {
+        return new Queue(WEB_MESSAGE);
+    }
+    @Bean
+    public Queue webAnswerMessageQueue() {
+        return new Queue(WEB_ANSWER_MESSAGE);
     }
 }
