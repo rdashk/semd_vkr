@@ -135,8 +135,8 @@ public class BotController{// implements AnswerFromFileHandler {
         }
         else {
             // send file types: XSD, SCH, XML, ZIP
-            //update.getMessage().setText(telegramFilePath);
-            sender.send(DOC_MESSAGE, new Answer(update.getMessage().getChatId().toString(), telegramFilePath));
+            update.getMessage().setText(telegramFilePath);
+            sender.sendUpdate(DOC_MESSAGE, update);
         }
     }
 

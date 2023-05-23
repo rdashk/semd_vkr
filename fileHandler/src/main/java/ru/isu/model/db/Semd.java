@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -18,5 +16,5 @@ public class Semd {
     @Id
     private Long code;
     private String name;
-    private Date date;
+    private String date;
 }

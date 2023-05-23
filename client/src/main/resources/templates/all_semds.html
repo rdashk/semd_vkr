@@ -45,6 +45,7 @@
             <thead>
             <tr>
                 <th> Код </th>
+                <th> Название </th>
                 <th> Дата </th>
             </tr>
             </thead>
@@ -52,9 +53,10 @@
             <tr th:if="${semds.isEmpty()}">
                 <td colspan="2"> Нет ни одного СЭМД </td>
             </tr>
-            <tr th:each="semd : ${semds}">
-                <td><span th:text="${semd}"> код </span></td>
-                <td><span > дата </span></td>
+            <tr th:each="semd : ${semds}" >
+                <td><span th:text="${semd.getCode()}"> код </span></td>
+                <td><span th:text="${semd.getName()}"> название </span></td>
+                <td><span th:text="${semd.getDate()}"> дата </span></td>
             </tr>
             </tbody>
         </table>
@@ -62,7 +64,6 @@
 
     <!-- Footer -->
     <footer class="w3-container w3-padding-16 w3-light-grey w3-bottom">
-        <h4>FOOTER</h4>
         <p>Made by <a href="https://vk.com/dariaaraz">me</a></p>
     </footer>
 

@@ -77,7 +77,7 @@ public class Stax {
                 xmlr.next();
                 if (xmlr.getEventType() == XMLStreamConstants.START_ELEMENT) {
                     if (xmlr.getLocalName().equals(tagName)) {
-                        System.out.println(xmlr.getLocalName());
+                        //System.out.println(xmlr.getLocalName());
                         break;
                     }
                 }
@@ -94,7 +94,7 @@ public class Stax {
                 xmlr.next();
                 if (xmlr.getEventType() == XMLStreamConstants.COMMENT) {
                     if (xmlr.getText().trim().contains(commentName)) {
-                        System.out.println(xmlr.getText());
+                        //System.out.println(xmlr.getText());
                         break;
                     }
                 }

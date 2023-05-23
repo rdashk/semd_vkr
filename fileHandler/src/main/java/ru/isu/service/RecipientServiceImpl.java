@@ -59,12 +59,7 @@ public class RecipientServiceImpl implements RecipientService {
         String command = answer.getMessage();
 
         if (command.equals("/listSEMD")) {
-            textToSend = fileController.getListSemd(semdRepository.findAll());
-            if (textToSend.isEmpty()) {
-                textToSend = "Список СЭМД пустой!";
-            } else {
-                textToSend = "<b>Список доступных СЭМД</b>\n\n"+ textToSend;
-            }
+            textToSend = fileController.getAllSemds(semdRepository.findAll());
         } else if (command.equals("/listFiles")) {
             if (fileController.getSemdCode().isEmpty()) {
                 textToSend = DESCR_SEMD;
@@ -102,14 +97,14 @@ public class RecipientServiceImpl implements RecipientService {
         var chatId = message.getChatId().toString();
         sendMessage.setChatId(chatId);
         String textToSend = "";
-        Type type = fileController.getDocType(update.getMessage().getDocument().getMimeType(),
-                update.getMessage().getText());
+        Type type = fileController.getDocType(message.getDocument().getMimeType(),
+                message.getText());
         switch (type) {
             case ZIP -> {
-                Document doc = update.getMessage().getDocument();
+                Document doc = message.getDocument();
                 Semd semd = fileController.getZip(
                         new DocType(doc.getFileName().substring(0, doc.getFileName().indexOf(".zip")),
-                                update.getMessage().getText(),
+                                message.getText(),
                                 type));
                 if (semd.getName().isEmpty()) {
                     textToSend = "Отсутствует файл с названием СЭМД!" + DESCR_ADD_ZIP;
@@ -133,10 +128,10 @@ public class RecipientServiceImpl implements RecipientService {
                 }
             }
             case XML -> {
-                textToSend = fileController.getXml(update.getMessage().getChatId().toString(), update.getMessage().getText());
+                textToSend = fileController.getXml(chatId, message.getText());
             }
             case SCH -> {
-                textToSend = fileController.getSch(update.getMessage().getChatId().toString(), update.getMessage().getText());
+                textToSend = fileController.getSch(chatId, message.getText());
             }
             default -> textToSend = "Ошибка!";
         }
@@ -149,7 +144,7 @@ public class RecipientServiceImpl implements RecipientService {
     public void getWebMessage(Answer answer) {
         String textToSend = "";
         if (answer.getMessage().equals("/listSEMD")) {
-            textToSend = fileController.getListSemd(semdRepository.findAll());
+            textToSend = fileController.getAllSemdsForTable(semdRepository.findAll());
         }
         sender.send(WEB_ANSWER_MESSAGE, new Answer(answer.getChatId(), textToSend));
     }

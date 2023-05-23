@@ -69,14 +69,30 @@ public class FileController {
     }
 
     /**
-     * For sending user list of files in user currentSEMDcode
+     * Bot send user all semds list
      *
-     * @return numbered list of file path
+     * @return all semds
      */
-    public String getListSemd(List<Semd> list) {
+    public String getAllSemds(List<Semd> list) {
         String answer = "";
         for (Semd s : list) {
-            answer += s.getCode() + ". " + s.getName() + "\n";
+            answer += s.getCode() + ". " + s.getName() + "("+s.getDate()+")\n";
+        }
+        if (answer.isEmpty()) {
+            return "Список СЭМД пустой!";
+        }
+        return "<b>Список доступных СЭМД</b>\n\n"+answer;
+    }
+
+    /**
+     * Bot send user all semds list for table on web page
+     *
+     * @return all semds for add to the table
+     */
+    public String getAllSemdsForTable(List<Semd> list) {
+        String answer = "";
+        for (Semd s : list) {
+            answer += s.getCode() + "}" + s.getName() + "}" + s.getDate()+"!";
         }
         return answer;
     }
@@ -158,7 +174,7 @@ public class FileController {
         if (answer.isEmpty()) {
             return "Список СЭМД пустой!";
         }
-        return "<b>Список файлов в СЭМД (код = "+getSemdCode()+")</b>\n\n"+answer;
+        return "<b>Список файлов СЭМД (код = "+getSemdCode()+")</b>\n\n"+answer;
     }
 
     public List<String> getFilesFromZip() {

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import ru.isu.model.Answer;
+import ru.isu.model.TableItem;
 import ru.isu.service.SenderToRabbitMQ;
 
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ import static ru.isu.model.RabbitQueue.WEB_MESSAGE;
 @Component
 @Controller
 public class PageController {
-    List<String> semds = new ArrayList<>();
+    List<TableItem> semds;
 
     private final SenderToRabbitMQ sender;
 
@@ -45,6 +46,10 @@ public class PageController {
     }
 
     public void setAllSemds(String message) {
-        this.semds = List.of(message.split("\n"));
+        var arr = message.split("!");
+        this.semds = new ArrayList<>();
+        for (var item: arr) {
+            this.semds.add(new TableItem(item.split("\\}")));
+        }
     }
 }

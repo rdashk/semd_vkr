@@ -11,6 +11,8 @@ import ru.isu.model.validation.SEMDvalidator;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -195,7 +197,8 @@ public class Files {
                         while ((count = zis.read(buffer)) != -1) {
                             byteArray.write(buffer, 0, count);
                             byte[] bytes = byteArray.toByteArray();
-                            currentSemdTitle = new String(bytes, "UTF-8");
+                            //currentSemdTitle = new String(bytes, "UTF-8");
+                            currentSemdTitle = byteArray.toString(StandardCharsets.UTF_8);
                             //setCurrentSEMDtitle(new String(bytes, "UTF-8"));
                             byteArray.reset();
                         }
@@ -232,7 +235,10 @@ public class Files {
             return new Semd();
         }
         deleteFolder(zipFolder);
-        return new Semd(Long.parseLong(semdCode), currentSemdTitle, new Date());
+        Date date = new Date();
+        SimpleDateFormat DateFor = new SimpleDateFormat("MM.yyyy");
+        String stringDate= DateFor.format(date);
+        return new Semd(Long.parseLong(semdCode), currentSemdTitle, stringDate);
     }
 
     /**

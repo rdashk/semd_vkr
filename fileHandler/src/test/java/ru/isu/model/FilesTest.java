@@ -11,6 +11,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.*;
 import java.net.MalformedURLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -136,6 +138,14 @@ public class FilesTest {
         System.out.println(arr[3]);
         s = s.replace("Q{urn:hl7-org:v3}","");
         assertEquals(s,"/ClinicalDocument[1]/recordTarget[1]/patientRole[1]");
+    }
+
+    @Test
+    public void getMonthAndYear() {
+        Date date = new Date();
+        SimpleDateFormat DateFor = new SimpleDateFormat("MM.yyyy");
+        String stringDate= DateFor.format(date);
+        assertEquals(stringDate, "05.2023");
     }
 
 }
