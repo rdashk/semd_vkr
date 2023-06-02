@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ru">
 <head>
-    <title>Главная</title>
+    <title>Все пользователи</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -29,22 +29,28 @@
 
 <!-- PAGE -->
 <div style="margin-left:300px;margin-top:43px;padding:20px">
+    <div class="w3-container">
+        <h5>Пользователи</h5>
 
-    <h3>Для проверки загрузите XML-документ</h3>
-
-    <div class="w3-quarter">
-        <div class="w3-container w3-blue w3-padding-16">
-            <div class="w3-left"><i class="fa fa-eye w3-xxxlarge"></i></div>
-            <div class="w3-clear"></div>
-            <h4>XML-документ</h4>
-        </div>
-    </div>
-    <div class="w3-quarter">
-        <div class="w3-container w3-teal w3-padding-16">
-            <div class="w3-left"><i class="fa fa-share-alt w3-xxxlarge"></i></div>
-            <div class="w3-clear"></div>
-            <h4>Архив</h4>
-        </div>
+        <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
+            <thead>
+            <tr>
+                <th> Дата использования бота </th>
+                <th> Имя пользователя </th>
+                <th> chat_id </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${users.isEmpty()}">
+                <td colspan="3"> Ни одного пользователя </td>
+            </tr>
+            <tr th:each="u : ${users}" >
+                <td><span th:text="${u.getId()}"> дата </span></td>
+                <td><span th:text="${u.getUserName()}"> имя </span></td>
+                <td><span th:text="${u.getChatId()}"> chat_id </span></td>
+            </tr>
+            </tbody>
+        </table>
     </div>
 
     <!-- Footer -->
@@ -57,10 +63,10 @@
 
 <script>
     // Get the Sidebar
-    var mySidebar = document.getElementById("mySidebar");
+    const mySidebar = document.getElementById("mySidebar");
 
     // Get the DIV with overlay effect
-    var overlayBg = document.getElementById("myOverlay");
+    const overlayBg = document.getElementById("myOverlay");
 
     // Toggle between showing and hiding the sidebar, and add overlay effect
     function w3_open() {

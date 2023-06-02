@@ -1,28 +1,26 @@
 package ru.isu.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import ru.isu.model.Answer;
-import ru.isu.model.TableItem;
-import ru.isu.service.SenderToRabbitMQ;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static ru.isu.model.RabbitQueue.WEB_MESSAGE;
+import ru.isu.repository.FileSemdRepository;
+import ru.isu.repository.SemdRepository;
+import ru.isu.repository.UserRepository;
 
 @Component
 @Controller
 public class PageController {
-    List<TableItem> semds = new ArrayList<>();
 
-    private final SenderToRabbitMQ sender;
+    @Autowired
+    private SemdRepository semdRepository;
 
-    public PageController(SenderToRabbitMQ sender) {
-        this.sender = sender;
-    }
+    @Autowired
+    private FileSemdRepository fileSemdRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     /*@GetMapping("/home")
     public String home(@RequestParam(name="name", required=false, defaultValue="World") String name, Model model) {
@@ -33,23 +31,24 @@ public class PageController {
 
     @GetMapping("/home")
     public String start(Model model) {
-        sender.send(WEB_MESSAGE, new Answer(model.toString(),"/listSEMD"));
-        model.addAttribute("name", "Dasha");
         return "home";
-        //return "redirect:/appointments";
     }
 
     @GetMapping("/all_semds")
     public String allSemds(Model model) {
-        model.addAttribute("semds", semds);
+        model.addAttribute("semds", semdRepository.findAll());
         return "all_semds";
     }
 
-    public void setAllSemds(String message) {
-        var arr = message.split("!");
-        this.semds = new ArrayList<>();
-        for (var item: arr) {
-            this.semds.add(new TableItem(item.split("\\}")));
-        }
+    @GetMapping("/files")
+    public String getFiles(Model model) {
+        model.addAttribute("files", fileSemdRepository.findAll());
+        return "files";
+    }
+
+    @GetMapping("/users")
+    public String getUsers(Model model) {
+        model.addAttribute("users", userRepository.findAll());
+        return "users";
     }
 }

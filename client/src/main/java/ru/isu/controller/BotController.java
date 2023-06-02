@@ -1,17 +1,21 @@
 package ru.isu.controller;
 
 import org.apache.commons.io.FileUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.model.Answer;
+import ru.isu.model.db.SystemUser;
+import ru.isu.repository.UserRepository;
 import ru.isu.service.SenderToRabbitMQ;
 import ru.isu.service.TelegramFileService;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static ru.isu.model.RabbitQueue.DOC_MESSAGE;
@@ -21,21 +25,23 @@ import static ru.isu.model.RabbitQueue.TEXT_MESSAGE;
  * All action with telegram bot
  */
 @Component
-public class BotController{// implements AnswerFromFileHandler {
+public class BotController{
 
     private TelegramBot telegramBot;
-    final String DESCR_BOT = "\n\nЭто бот для проверки XML-документа на соответствие СЭМД\n\n<b>Команды:</b>\n\n" +
+    final String DESCR_BOT = "\n\nЭто бот для проверки СЭМД на соответствие его пакету спецификации.\n\n<b>Команды:</b>\n\n" +
             "/start - начало работы с ботом\n" +
             "/help - список команд\n" +
-            "/listSEMD - список доступных СЭМД\n" +
-            "/listFiles - список доступных файлов текущего СЭМД\n" +
-            "/currentSEMD - текущий СЭМД\n" +
-            "/checkXML - проверка xml-документа\n" +
-            "/checkXML_body - проверка только <b>тела</b> xml-документа\n" +
-            "/deleteMyXML - удалить папку пользователя";
+            "/listSEMD - список пакетов спецификации СЭМД\n" +
+            "/listFiles - список файлов текущего пакета спецификации\n" +
+            "/currentSEMD - текущий пакет спецификации\n" +
+            "/checkXML - проверка СЭМД\n" +
+            "/checkXML_body - проверка содержимого <b>тела</b> СЭМД";
 
     private final TelegramFileService fileService;
     private final SenderToRabbitMQ sender;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public BotController(TelegramFileService fileService, SenderToRabbitMQ sender) {
         this.fileService = fileService;
@@ -99,18 +105,18 @@ public class BotController{// implements AnswerFromFileHandler {
         String messageText = message.getText();
 
         switch (messageText) {
-            case "/help": {
+            case "/help" -> {
                 telegramBot.sendMessage(message.getChatId(),
                         DESCR_BOT);
-                break;
             }
-            case "/start": {
+            case "/start" -> {
                 telegramBot.sendMessage(message.getChatId(),
                         "Здравствуйте, " + message.getChat().getFirstName() + "!" + DESCR_BOT);
-                break;
+                //SimpleDateFormat DateFor = new SimpleDateFormat("DD.MM.yyyy");
+                //DateFor.format(date);
+                userRepository.save(new SystemUser(new Date().toString(), message.getChat().getUserName(), message.getChatId().toString()));
             }
-
-            default: {
+            default -> {
                 createSendMessage(update, "Обрабатываю команду...");
                 sender.send(TEXT_MESSAGE, new Answer(message.getChatId().toString(), messageText));
             }
@@ -131,11 +137,12 @@ public class BotController{// implements AnswerFromFileHandler {
             createSendMessage(update, "Неподдерживаемый тип файла!");
         }
         else if (telegramFilePath.equals("wrong_name_zip")) {
-            createSendMessage(update, "Название архива СЭМД должно быть равно коду СЭМД!");
+            createSendMessage(update, "Название пакета спецификации должно быть равно коду СЭМД!");
         }
         else {
             // send file types: XSD, SCH, XML, ZIP
             update.getMessage().setText(telegramFilePath);
+            // TODO: send other object = not update
             sender.sendUpdate(DOC_MESSAGE, update);
         }
     }
@@ -145,19 +152,19 @@ public class BotController{// implements AnswerFromFileHandler {
     }
 
     public void createAnswerMessage(SendMessage message) {
-        telegramBot.sendMessage(Long.parseLong(message.getChatId()), message.getText().toString());
+        telegramBot.sendMessage(Long.parseLong(message.getChatId()), message.getText());
     }
 
     public void createValidMessage(SendMessage message) {
 
-        telegramBot.sendMessage(Long.parseLong(message.getChatId()), message.getText().toString());
+        telegramBot.sendMessage(Long.parseLong(message.getChatId()), message.getText());
         // if found some errors
-        List<String> pathFilesWithErrors = hasError(message.getChatId().toString()+"/errors");
+        List<String> pathFilesWithErrors = hasError(message.getChatId() +"/errors");
         //System.out.println(pathFilesWithErrors.toString());
         if (!pathFilesWithErrors.isEmpty()) {
             telegramBot.sendFile(Long.parseLong(message.getChatId()), pathFilesWithErrors);
 
-            deleteFolder(message.getChatId()+"/errors");
+            deleteFolder(message.getChatId());
         }
     }
 

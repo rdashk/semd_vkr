@@ -19,24 +19,22 @@ public class FileController {
 
     final String DESCR_ADD_XML = "\nЗагрузите файл в формате <b>xml</b>." +
             "\nПРОВЕРЯЙТЕ РАЗРЕШЕНИЕ ФАЙЛА ПЕРЕД ЗАГРУЗКОЙ!";
-    final String DESCR_ADD_ZIP = "\nЗагрузите архив СЭМД (имя архива = <b>КОД_СЭМД.zip</b>).В архиве обязательно наличие:" +
-            "1) шаблов(<b>xsd</b>)" +
+    final String DESCR_ADD_ZIP = "\nЗагрузите пакет спецификации СЭМД (имя архива = <b>КОД_СЭМД.zip</b>). В архиве обязательно наличие:" +
+            "1) схем (<b>xsd</b>)" +
             "2) текстового документа с названием СЭМД." +
-            "\nДля проверки на соответствие схематрону - наличие файла(<b>sch</b>).";
+            "\nДля проверки на соответствие схематрону - наличие схематрона (файл <b>sch</b>).";
     final String DESCR_GET_XML = "Файл <b>xml</b> успешно загружен! ";
-    final String DESCR_GET_SCH = "Файл <b>sch</b> успешно загружен!";
     final String DESCR_CHECK = "\n\n<b>Команды:</b>\n\n" +
-            "/checkXML - выполнение проверки xml-документа на соответствие шаблонам и схематрону\n" +
-            "/checkXML_body - выполнение проверки <b>тела</b> xml-документа на соответствие схематрону";
+            "/checkXML - проверка xml-документа на соответствие пакету спецификации\n" +
+            "/checkXML_body - проверка <b>тела</b> xml-документа на соответствие схематрону";
     final String DESCR_ANS = "<b>Результат проверки</b>\n\n";
-    final String DESCR_SEMD = "CЭМД не выбран. \nВыбор СЭМД осуществляется автоматически " +
-            "при загрузке вашего xml-документа.\nДля просмотра списка доступных СЭМД команда /listSEMD ";
+    final String DESCR_SEMD = "Пакет спецификации не определен! \nВыбор нужного пакета осуществляется " +
+            "при загрузке xml-документа.\nДля просмотра списка доступных пакетов спецификации - команда /listSEMD ";
 
 
     public String getText(String messageText) {
 
         switch (messageText) {
-
             case "/checkXML" -> {
                 try {
                     return readyToChecking(false);
@@ -44,7 +42,6 @@ public class FileController {
                     throw new RuntimeException(e);
                 }
             }
-
             case "/checkXML_body" -> {
                 try {
                     return readyToChecking(true);
@@ -52,7 +49,6 @@ public class FileController {
                     throw new RuntimeException(e);
                 }
             }
-
             case "/deleteMyXML" -> {
                 String chatId = files.getChatID();
                 if (chatId.isEmpty()) return "xml-документ отсутствует в системе!";
@@ -75,13 +71,13 @@ public class FileController {
      */
     public String getAllSemds(List<Semd> list) {
         String answer = "";
+        if (list.isEmpty()) {
+            return "Список СЭМД пустой!";
+        }
         for (Semd s : list) {
             answer += s.getCode() + ". " + s.getName() + "("+s.getStringDate()+")\n";
         }
-        if (answer.isEmpty()) {
-            return "Список СЭМД пустой!";
-        }
-        return "<b>Список доступных СЭМД</b>\n\n"+answer;
+        return "<b>Список доступных пакетов спецификации</b>\n\n"+answer;
     }
 
     /**
@@ -101,20 +97,21 @@ public class FileController {
      * User have all files and can get conformity check
      */
     private String readyToChecking(boolean body) throws SchematronException {
-        if (files.readyToChecking()) {
-            if (body) {
-                return DESCR_ANS+files.getAnswer(true);
-            } else {
-                return DESCR_ANS+files.getAnswer(false);
-            }
-        }
+        String chatId = files.getChatID();
         
         if (files.getCurrentSEMDcode().isEmpty()) {
             return DESCR_ADD_XML;
         } else if (!files.fileIsExist(files.getCurrentSEMDcode())) {
             return DESCR_ADD_ZIP;
         }
-        return "Загрузите xml-документ и выберете СЭМД";
+        if (files.fileIsExist(chatId+"/"+chatId+".xml") && files.fileIsExist(files.getCurrentSEMDcode())) {
+            if (body) {
+                return DESCR_ANS+files.getAnswer(true);
+            } else {
+                return DESCR_ANS+files.getAnswer(false);
+            }
+        }
+        return "Загрузите xml-документ!";
     }
 
     public Type getDocType(String mimeType, String docPath) {
@@ -149,17 +146,15 @@ public class FileController {
         DocType docType = new DocType("", text, XML);
         files.saveNewFile(docType);
 
-        files.setCurrentSEMDcode(Node.getAttributeValue(chatId+"/"+files.getName_XML(), "ClinicalDocument/code/@code"));
+        files.setCurrentSEMDcode(Node.getAttributeValue(chatId+"/"+chatId+".xml", "ClinicalDocument/code/@code"));
         return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_CHECK;
     }
 
-    //TODO: must save to db (not users folder)
-    public String getSch(String chatId, String text) {
-        files.setChatID(chatId);
-        DocType docType = new DocType("", text, SCH);
-        files.saveNewFile(docType);
+    public String addFileToSemdFiles(String filename, String path, Type type) {
+        //files.setChatID(chatId);
+        files.saveNewFile(new DocType(filename, path, type));
 
-        return DESCR_GET_SCH;
+        return "Файл " + filename + "."+type.getName()+" успешно сохранен!";
     }
 
     public String getSemdCode() {
@@ -169,18 +164,21 @@ public class FileController {
     public String getListFiles(List<String> list) {
         String answer = "";
         for (String s : list) {
-            answer += getSemdCode() + ". " + s + "\n";
+            answer += s.substring(s.indexOf(" "), s.indexOf("}")) + "\n";
         }
         if (answer.isEmpty()) {
-            return "Список СЭМД пустой!";
+            return "Список пакетов спецификации пустой!";
         }
-        return "<b>Список файлов СЭМД (код = "+getSemdCode()+")</b>\n\n"+answer;
+        return "<b>Список файлов для СЭМД (код = "+getSemdCode()+")</b>\n\n"+answer;
     }
 
     public List<String> getFilesFromZip() {
         List<String> list = files.getPathList();
-        //files.getPathList().clear();
-        System.out.println(list.toString());
+        //System.out.println(list.toString());
         return list;
+    }
+
+    public void clearFilesFromZip() {
+        files.getPathList().clear();
     }
 }

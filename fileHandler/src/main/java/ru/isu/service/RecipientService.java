@@ -9,5 +9,4 @@ import ru.isu.model.Answer;
 public interface RecipientService {
     void getTextMessage(Answer answer);
     void getDocMessage(Update update);
-    void getWebMessage(Answer answer);
 }

@@ -6,6 +6,4 @@ public class RabbitQueue {
     public static final String TEXT_MESSAGE = "text_message";
     public static final String ANSWER_MESSAGE = "answer_message";
     public static final String VALID_MESSAGE = "validation_message";
-    public static final String WEB_MESSAGE = "web_message";
-    public static final String WEB_ANSWER_MESSAGE = "web_answer_message";
 }

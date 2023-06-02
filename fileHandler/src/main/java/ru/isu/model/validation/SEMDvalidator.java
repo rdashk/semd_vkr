@@ -66,7 +66,6 @@ public class SEMDvalidator implements SchematronValidator, ShemaValidator{
     public List<String> resultOfSchematronChecking(String schPath, String xmlDocument) {
 
         validateSchematron(schPath, xmlDocument);
-        // TODO: send file name
         return getErrors();
     }
 

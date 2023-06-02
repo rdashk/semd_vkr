@@ -41,12 +41,4 @@ public class RabbitMQConfig {
     public Queue validMessageQueue() {
         return new Queue(VALID_MESSAGE);
     }
-    @Bean
-    public Queue webMessageQueue() {
-        return new Queue(WEB_MESSAGE);
-    }
-    @Bean
-    public Queue webAnswerMessageQueue() {
-        return new Queue(WEB_ANSWER_MESSAGE);
-    }
 }

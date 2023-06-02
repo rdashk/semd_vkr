@@ -29,13 +29,11 @@ public class TelegramBot extends TelegramLongPollingBot {
     //@Value("${bot.username}") String botName;
     //@Value("${bot.token}") String botToken;
 
-    /**
-     * Send message to controller
-     */
     @PostConstruct
     public void init() {
         botController.createBot(this);
     }
+
     @Override
     public String getBotUsername() {
         return config.getBotName();

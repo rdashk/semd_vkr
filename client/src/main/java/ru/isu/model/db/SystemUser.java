@@ -1,7 +1,6 @@
 package ru.isu.model.db;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,17 +10,16 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-/*@Table(name = "files")
+/*@Table(name = "semd")
 @Entity*/
-@Document(collection = "files")
-public class FileSemd {
-
+@Document(collection = "users")
+public class SystemUser {
     @Id
     @JsonProperty("id")
-    String id;//path
-    @JsonProperty("code")
-    String code;
-    @Column(columnDefinition = "bytea")
-    @JsonProperty("content")
-    byte[] content;
+    private String id;//date
+    @JsonProperty("user_name")
+    private String userName;
+    @JsonProperty("chat_id")
+    private String chatId;
+
 }

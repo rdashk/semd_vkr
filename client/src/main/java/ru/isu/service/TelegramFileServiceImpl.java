@@ -33,7 +33,7 @@ public class TelegramFileServiceImpl implements TelegramFileService {
         Document doc = update.getMessage().getDocument();
         //System.out.println(doc.getMimeType());
         String s = processDoc(update);
-        String fileName = doc.getFileName().substring(0, doc.getFileName().indexOf("."));
+        //String fileName = doc.getFileName().substring(0, doc.getFileName().indexOf("."));
         switch (doc.getMimeType()) {
             case "application/octet-stream" -> {
                 if (s.contains(".xsd")) {
@@ -112,6 +112,13 @@ public class TelegramFileServiceImpl implements TelegramFileService {
     }
 
     // метод, где выводится ссылка для скачивания
+
+    /**
+     * Create link for downloading file
+     * @param filePath file path
+     * @return link
+     * @throws Exception
+     */
     private String downloadFile(String filePath) throws Exception {
         String fullUri = fileStorageUri.replace("{token}", botToken)
                 .replace("{filePath}", filePath);
@@ -124,7 +131,7 @@ public class TelegramFileServiceImpl implements TelegramFileService {
         }
         return fullUri;
 
-        /* TODO: how to readFile big file?
+        /*
         try (InputStream is = urlObj.openStream()) {
             return is.readAllBytes();
         } catch (IOException e) {

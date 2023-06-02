@@ -5,10 +5,10 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import ru.isu.controller.BotController;
-import ru.isu.controller.PageController;
 import ru.isu.model.Answer;
 
-import static ru.isu.model.RabbitQueue.*;
+import static ru.isu.model.RabbitQueue.ANSWER_MESSAGE;
+import static ru.isu.model.RabbitQueue.VALID_MESSAGE;
 
 
 @Service
@@ -16,11 +16,11 @@ import static ru.isu.model.RabbitQueue.*;
 public class AnswerFromFileHandlerImpl implements AnswerFromFileHandler{
 
     private final BotController botController;
-    private final PageController pageController;
+    /*@Autowired
+    private SemdRepository semdRepository;*/
 
-    public AnswerFromFileHandlerImpl(BotController botController, PageController pageController) {
+    public AnswerFromFileHandlerImpl(BotController botController) {
         this.botController = botController;
-        this.pageController = pageController;
     }
 
     @Override
@@ -41,11 +41,5 @@ public class AnswerFromFileHandlerImpl implements AnswerFromFileHandler{
         sendMessage.setChatId(answer.getChatId());
         sendMessage.setText(answer.getMessage());
         botController.createValidMessage(sendMessage);
-    }
-
-    @Override
-    @RabbitListener(queues = WEB_ANSWER_MESSAGE)
-    public void toPageFromRabbitMQ(Answer answer) {
-        pageController.setAllSemds(answer.getMessage());
     }
 }

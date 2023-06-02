@@ -8,6 +8,7 @@ import ru.isu.model.enums.Type;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.*;
 import javax.xml.xpath.*;
 import java.io.*;
 import java.net.MalformedURLException;
@@ -147,5 +148,70 @@ public class FilesTest {
         String stringDate= DateFor.format(date);
         assertEquals(stringDate, "05.2023");
     }
+
+    private XMLStreamReader xmlr;
+    private XMLOutputFactory output;
+    private XMLStreamWriter writer;
+
+    @Test
+    public void testWrite() {
+        writer = output.createXMLStreamWriter(new FileWriter(nameForSave + ".sch"));
+        //writeSchematronAttr();
+        StaxWrite("pattern");
+    }
+    private void StaxWrite(String stopTag) throws XMLStreamException {
+        try {
+            while (xmlr.hasNext()) {
+                xmlr.next();
+                switch (xmlr.getEventType()) {
+                    case XMLStreamConstants.START_ELEMENT: {
+                        System.out.println(xmlr.getLocalName());
+                        //writer.setPrefix(xmlr.getPrefix(), xmlr.getLocalName());
+                        if (!stopTag.isEmpty() && xmlr.getLocalName().equals(stopTag)) {
+                            if (stopTag.equals("pattern")) {//shematron
+                                StaxReadToComment("У2");
+                            } else {//xml
+                                StaxReadToTag("component");
+                            }
+                            stopTag = "";
+                        }
+                        writer.writeStartElement(xmlr.getLocalName());
+                        if (xmlr.getAttributeCount() > 0) {
+                            for (int i = 0; i < xmlr.getAttributeCount(); i++) {
+                                if (xmlr.getAttributePrefix(i).isEmpty()) {
+                                    writer.writeAttribute(xmlr.getAttributeLocalName(i), xmlr.getAttributeValue(i));
+                                } else {
+                                    writer.writeAttribute(xmlr.getAttributePrefix(i), xmlr.getAttributeLocalName(i), xmlr.getAttributeLocalName(i), xmlr.getAttributeValue(i));
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case XMLStreamConstants.CHARACTERS: {
+                        writer.writeCharacters(xmlr.getText());
+                        break;
+                    }
+                    case XMLStreamConstants.COMMENT: {
+                        writer.writeComment(xmlr.getText());
+                        break;
+                    }
+                    case XMLStreamConstants.END_ELEMENT: {
+                        //writer.setPrefix(xmlr.getPrefix(), xmlr.getLocalName());
+                        writer.writeEndElement();
+                        break;
+                    }
+                }
+            }
+
+            // Закрываем XML-документ
+            //writer.writeEndDocument();
+
+            writer.flush();
+            writer.close();
+        } catch (XMLStreamException ex) {
+            ex.printStackTrace();
+        }
+    }
+
 
 }

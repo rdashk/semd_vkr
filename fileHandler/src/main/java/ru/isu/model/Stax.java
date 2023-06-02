@@ -9,13 +9,23 @@ import javax.xml.stream.*;
 import java.io.*;
 import java.util.List;
 
+/**
+ * Class for read and write content xml-file
+ */
 public class Stax {
 
     private XMLStreamReader xmlr;
     private XMLOutputFactory output;
     private XMLStreamWriter writer;
 
-    public boolean saveBody(String fileName, String nameForSave, Type type) {
+    /**
+     * Save only body of XML-file or SCH-file
+     *
+     * @param fileName    file path
+     * @param nameForSave path for new created file
+     * @param type        file type (only xml or sch)
+     */
+    public void saveBody(String fileName, String nameForSave, Type type) {
         if (type.equals(Type.XML) || type.equals(Type.SCH)) {
 
             try {
@@ -24,19 +34,21 @@ public class Stax {
                 if (type.equals(Type.XML)) {
                     writer = output.createXMLStreamWriter(new FileWriter(nameForSave + ".xml"));
                     writeClinicalDocumentAttr();
-
                 } else {
                     writer = output.createXMLStreamWriter(new FileWriter(nameForSave + ".sch"));
                     writeSchematronAttr();
+
                 }
                 StaxWrite();
             } catch (XMLStreamException | IOException e) {
-                return false;
+                System.out.println(e.getMessage());
             }
         }
-        return false;
     }
 
+    /**
+     * Writing attributes to xml-document
+     */
     private void writeClinicalDocumentAttr() {
         String tagName = "component";
         StaxReadToTag(tagName);
@@ -58,6 +70,9 @@ public class Stax {
         }
     }
 
+    /**
+     * Writing attributes to sch-document
+     */
     private void writeSchematronAttr() {
         StaxReadToComment("У2");
         try {
@@ -66,11 +81,45 @@ public class Stax {
             writer.writeAttribute("xmlns", "http://purl.oclc.org/dsdl/schematron");
             writer.writeAttribute("queryBinding", "xslt2");
 
+            writer.writeStartElement("ns");
+            writer.writeAttribute("prefix", "xsi");
+            writer.writeAttribute("uri", "http://www.w3.org/2001/XMLSchema-instance");
+            writer.writeEndElement();
+
+            writer.writeStartElement("ns");
+            writer.writeAttribute("prefix", "identity");
+            writer.writeAttribute("uri", "urn:hl7-ru:identity");
+            writer.writeEndElement();
+
+            writer.writeStartElement("ns");
+            writer.writeAttribute("prefix", "address");
+            writer.writeAttribute("uri", "urn:hl7-ru:address");
+            writer.writeEndElement();
+
+            writer.writeStartElement("ns");
+            writer.writeAttribute("prefix", "medService");
+            writer.writeAttribute("uri", "urn:hl7-ru:medService");
+            writer.writeEndElement();
+
+            writer.writeStartElement("ns");
+            writer.writeAttribute("prefix", "PII");
+            writer.writeAttribute("uri", "urn:hl7-ru:PII");
+            writer.writeEndElement();
+
+            writer.writeStartElement("ns");
+            writer.writeAttribute("prefix", "fias");
+            writer.writeAttribute("uri", "urn:hl7-ru:fias");
+            writer.writeEndElement();
+
         } catch (XMLStreamException e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * Read file and stop on tagName
+     * @param tagName tag name
+     */
     private void StaxReadToTag(String tagName) {
         try {
             while (xmlr.hasNext()) {
@@ -88,6 +137,10 @@ public class Stax {
         }
     }
 
+    /**
+     * Read file and stop on next line than commentName
+     * @param commentName comment name
+     */
     private void StaxReadToComment(String commentName) {
         try {
             while (xmlr.hasNext()) {
@@ -95,6 +148,7 @@ public class Stax {
                 if (xmlr.getEventType() == XMLStreamConstants.COMMENT) {
                     if (xmlr.getText().trim().contains(commentName)) {
                         //System.out.println(xmlr.getText());
+                        xmlr.next();
                         break;
                     }
                 }
@@ -105,13 +159,16 @@ public class Stax {
         }
     }
 
+    /**
+     * Write content to xml or sch files
+     * @throws XMLStreamException
+     */
     private void StaxWrite() throws XMLStreamException {
         try {
             while (xmlr.hasNext()) {
                 xmlr.next();
                 switch (xmlr.getEventType()) {
                     case XMLStreamConstants.START_ELEMENT: {
-                        //TODO need????
                         //writer.setPrefix(xmlr.getPrefix(), xmlr.getLocalName());
                         writer.writeStartElement(xmlr.getLocalName());
                         if (xmlr.getAttributeCount() > 0) {
@@ -134,7 +191,6 @@ public class Stax {
                         break;
                     }
                     case XMLStreamConstants.END_ELEMENT: {
-                        //TODO need????
                         //writer.setPrefix(xmlr.getPrefix(), xmlr.getLocalName());
                         writer.writeEndElement();
                         break;
@@ -153,9 +209,10 @@ public class Stax {
     }
 
     /**
-     * @param listErrors
-     * @param fileName
-     * @param currentXML
+     * Create errors from schematron (pdf and txt)
+     * @param listErrors list with errors description
+     * @param fileName name for save pdf and txt files
+     * @param currentXML xml path
      */
     public void errorsSchematronFilesCreate(List<String> listErrors, String fileName, String currentXML) {
         BufferedWriter writer = null;
@@ -287,6 +344,11 @@ public class Stax {
         }
     }
 
+    /**
+     * Create errors from schema (pdf and txt)
+     * @param listErrors list with errors description
+     * @param fileName name for save pdf and txt files
+     */
     public void errorsSchemaFileCreate(List<String> listErrors, String fileName) {
         BufferedWriter writer = null;
 
