@@ -16,8 +16,6 @@ import static ru.isu.model.RabbitQueue.VALID_MESSAGE;
 public class AnswerFromFileHandlerImpl implements AnswerFromFileHandler{
 
     private final BotController botController;
-    /*@Autowired
-    private SemdRepository semdRepository;*/
 
     public AnswerFromFileHandlerImpl(BotController botController) {
         this.botController = botController;

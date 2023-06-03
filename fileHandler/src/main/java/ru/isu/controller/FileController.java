@@ -81,19 +81,6 @@ public class FileController {
     }
 
     /**
-     * Bot send user all semds list for table on web page
-     *
-     * @return all semds for add to the table
-     */
-    public String getAllSemdsForTable(List<Semd> list) {
-        String answer = "";
-        for (Semd s : list) {
-            answer += s.getCode() + "}" + s.getName() + "}" + s.getStringDate()+"!";
-        }
-        return answer;
-    }
-
-    /**
      * User have all files and can get conformity check
      */
     private String readyToChecking(boolean body) throws SchematronException {
@@ -173,9 +160,8 @@ public class FileController {
     }
 
     public List<String> getFilesFromZip() {
-        List<String> list = files.getPathList();
         //System.out.println(list.toString());
-        return list;
+        return files.getPathList();
     }
 
     public void clearFilesFromZip() {

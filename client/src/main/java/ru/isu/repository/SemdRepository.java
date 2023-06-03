@@ -11,8 +11,5 @@ public interface SemdRepository extends MongoRepository<Semd, String> {
     @Query("{id:'?0'}")
     Semd findSemdByCode(String code);
 
-    //@Query("SELECT s FROM Semd s ORDER BY s.code")
-    //List<Semd> getAll();
-
     void deleteSemdById(String code);
 }

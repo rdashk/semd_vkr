@@ -28,9 +28,9 @@ public class RecipientServiceImpl implements RecipientService {
 
     final String DESCR_GET_ZIP = "Архив СЭМД успешно загружен!";
     final String DESCR_ADD_ZIP = "\nЗагрузите архив СЭМД (имя архива = <b>КОД_СЭМД.zip</b>). " +
-            "В архиве обязательно наличие:" +
-            "1) шаблов(<b>xsd</b>)" +
-            "2) текстового документа с названием СЭМД." +
+            "\nВ архиве обязательно наличие:" +
+            "\n1) шаблонов(<b>xsd</b>)" +
+            "\n2) текстового документа с названием СЭМД." +
             "\nДля проверки на соответствие схематрону - наличие файла(<b>sch</b>).";
     final String DESCR_SEMD = "CЭМД не выбран. \nВыбор СЭМД осуществляется автоматически " +
             "при загрузке вашего xml-документа.\nДля просмотра списка доступных СЭМД команда /listSEMD ";
@@ -55,35 +55,35 @@ public class RecipientServiceImpl implements RecipientService {
         //System.out.println("RecipientServiceImpl:get text message");
 
         var chatId = answer.getChatId();
-        String textToSend = "";
+        String textToSend;
         String command = answer.getMessage();
 
-        if (command.equals("/listSEMD")) {
-            textToSend = fileController.getAllSemds(semdRepository.findAll());
-        } else if (command.equals("/listFiles")) {
-            if (fileController.getSemdCode().isEmpty()) {
-                textToSend = DESCR_SEMD;
-            } else {
-                textToSend = fileController.getListFiles(
-                        fileSemdRepository.findFilesByCode(fileController.getSemdCode()));
-            }
-            // TODO: for future save
-            byte[] bin = fileSemdRepository.findFileSemdById("77/CDA.xsd").getContent();
-            System.out.println(new String(bin));
-
-        } else if (command.equals("/currentSEMD")) {
-            if (fileController.getSemdCode().isEmpty()) {
-                textToSend = DESCR_SEMD;
-            } else {
-                Semd semd = semdRepository.findSemdByCode(fileController.getSemdCode());
-                if (semd == null) {
-                    textToSend = "\nВ базе данных отсутствует СЭМД с кодом = " + fileController.getSemdCode();
+        switch (command) {
+            case "/listSEMD" -> textToSend = fileController.getAllSemds(semdRepository.findAll());
+            case "/listFiles" -> {
+                if (fileController.getSemdCode().isEmpty()) {
+                    textToSend = DESCR_SEMD;
                 } else {
-                    textToSend = "\nТекущий СЭМД =" + semd.getName() + " (код " + semd.getCode() + ").";
+                    textToSend = fileController.getListFiles(
+                            fileSemdRepository.findFilesByCode(fileController.getSemdCode()));
+                }
+                // TODO: for future save
+                byte[] bin = fileSemdRepository.findFileSemdById("77/CDA.xsd").getContent();
+                System.out.println(new String(bin));
+            }
+            case "/currentSEMD" -> {
+                if (fileController.getSemdCode().isEmpty()) {
+                    textToSend = DESCR_SEMD;
+                } else {
+                    Semd semd = semdRepository.findSemdByCode(fileController.getSemdCode());
+                    if (semd == null) {
+                        textToSend = "\nВ базе данных отсутствует СЭМД с кодом = " + fileController.getSemdCode();
+                    } else {
+                        textToSend = "\nТекущий СЭМД =" + semd.getName() + " (код " + semd.getCode() + ").";
+                    }
                 }
             }
-        } else {
-            textToSend = fileController.getText(command);
+            default -> textToSend = fileController.getText(command);
         }
 
         // choose type massage
@@ -103,7 +103,7 @@ public class RecipientServiceImpl implements RecipientService {
         var sendMessage = new SendMessage();
         var chatId = message.getChatId().toString();
         sendMessage.setChatId(chatId);
-        String textToSend = "";
+        String textToSend;
         Type type = fileController.getDocType(message.getDocument().getMimeType(),
                 message.getText());
         String semdCodeFromController = fileController.getSemdCode();
@@ -139,9 +139,7 @@ public class RecipientServiceImpl implements RecipientService {
                     fileController.clearFilesFromZip();
                 }
             }
-            case XML -> {
-                textToSend = fileController.getXml(chatId, message.getText());
-            }
+            case XML -> textToSend = fileController.getXml(chatId, message.getText());
             case SCH -> {
                 if (semdRepository.existsById(semdCodeFromController)) {
                     textToSend = fileController.addFileToSemdFiles("schematron", message.getText(), Type.SCH);

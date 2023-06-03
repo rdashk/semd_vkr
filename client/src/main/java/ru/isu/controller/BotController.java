@@ -54,11 +54,11 @@ public class BotController{
 
     /**
      * Checking message from user
-     * @param update
+     * @param update Update
      */
     public void validData(Update update) {
         if (update == null) {
-            createSendMessage(update, "Повторите отправку!");
+            createSendMessage(null, "Повторите отправку!");
             return;
         }
 
@@ -98,22 +98,18 @@ public class BotController{
 
     /**
      * Actions if message type is text
-     * @param update
+     * @param update Update
      */
     private void textMessage(Update update) {
         var message = update.getMessage();
         String messageText = message.getText();
 
         switch (messageText) {
-            case "/help" -> {
-                telegramBot.sendMessage(message.getChatId(),
-                        DESCR_BOT);
-            }
+            case "/help" -> telegramBot.sendMessage(message.getChatId(),
+                    DESCR_BOT);
             case "/start" -> {
                 telegramBot.sendMessage(message.getChatId(),
                         "Здравствуйте, " + message.getChat().getFirstName() + "!" + DESCR_BOT);
-                //SimpleDateFormat DateFor = new SimpleDateFormat("DD.MM.yyyy");
-                //DateFor.format(date);
                 userRepository.save(new SystemUser(new Date().toString(), message.getChat().getUserName(), message.getChatId().toString()));
             }
             default -> {
@@ -198,18 +194,4 @@ public class BotController{
 
         return files;
     }
-
-    /*@Override
-    @RabbitListener(queues = ANSWER_MESSAGE)
-    public void getAnswerFromRabbitMQ(SendMessage sendMessage) {
-
-        createAnswerMessage(sendMessage);
-    }
-
-    @Override
-    @RabbitListener(queues = VALID_MESSAGE)
-    public void getValidFromRabbitMQ(SendMessage sendMessage) {
-
-        createValidMessage(sendMessage);
-    }*/
 }
