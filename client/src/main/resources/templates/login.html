@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <title>Вход в систему</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body class="w3-light-grey">
+
+<!-- Top -->
+<div class="w3-bar w3-top w3-black w3-large" style="z-index:4">
+    <span class="w3-bar-item">Проверка СЭМД</span>
+</div>
+
+<div class="w3-container w3-content w3-padding-64" style="max-width:800px" id="contact">
+    <h2 class="w3-wide w3-center">ВХОД</h2>
+    <div th:if="${param.error}">
+        Неправильное имя или пароль.
+    </div>
+    <div th:if="${param.logout}">
+        Вы вышли из системы.
+    </div>
+    <div class="w3-row w3-padding-32">
+        <div class="w3-col m6">
+            <form th:action="@{/login}" method="post">
+                <div><label> имя <input class="w3-input w3-border" type="text" name="username" placeholder="имя"/> </label></div>
+                <div><label> пароль <input class="w3-input w3-border" type="password" name="password" placeholder="пароль"/> </label></div>
+                <button class="w3-button w3-black w3-section" type="submit">Войти</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

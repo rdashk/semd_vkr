@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ru">
 <head>
     <title>Главная</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -10,12 +10,18 @@
 
 <!-- Top -->
 <div class="w3-bar w3-top w3-black w3-large" style="z-index:4">
-    <button class="w3-bar-item w3-button w3-hide-large w3-hover-none w3-hover-text-light-grey" onclick="w3_open();"><i class="fa fa-bars"></i>Menu</button>
-    <span class="w3-bar-item">Проверка СЭМД</span>
+    <button sec:authorize="isAuthenticated()" class="w3-bar-item w3-button w3-hide-large w3-hover-none w3-hover-text-light-grey" onclick="w3_open();"><i class="fa fa-bars"></i>Меню</button>
+    <span class="w3-bar-item w3-wide w3-center">Проверка СЭМД</span>
+    <form sec:authorize="isAnonymous()" class="w3-bar-item w3-right" th:action="@{/login}" method="post">
+        <input class="w3-button" type="submit" value="Войти"/>
+    </form>
+    <form sec:authorize="isAuthenticated()" class="w3-bar-item w3-right" th:action="@{/logout}" method="post">
+        <input class="w3-button" type="submit" value="Выйти"/>
+    </form>
 </div>
 
 <!-- Sidebar/menu -->
-<nav class="w3-sidebar w3-collapse w3-white w3-animate-left" style="z-index:3;width:300px;" id="mySidebar"><br>
+<nav sec:authorize="isAuthenticated()" class="w3-sidebar w3-collapse w3-white w3-animate-left" style="z-index:3;width:200px;" id="mySidebar"><br>
     <div class="w3-container">
         <h5>Меню</h5>
     </div>
@@ -28,9 +34,11 @@
 </nav>
 
 <!-- PAGE -->
-<div style="margin-left:300px;margin-top:43px;padding:20px">
+<div style="margin-left:200px;margin-top:43px;padding:20px">
 
-    <h3>Для проверки загрузите XML-документ</h3>
+    <div class="w3-container">
+        <h3>Для проверки загрузите XML-документ</h3>
+    </div>
 
     <div class="w3-quarter">
         <div class="w3-container w3-blue w3-padding-16">
@@ -43,7 +51,7 @@
         <div class="w3-container w3-teal w3-padding-16">
             <div class="w3-left"><i class="fa fa-share-alt w3-xxxlarge"></i></div>
             <div class="w3-clear"></div>
-            <h4>Архив</h4>
+            <h4>Пакет спецификации</h4>
         </div>
     </div>
 

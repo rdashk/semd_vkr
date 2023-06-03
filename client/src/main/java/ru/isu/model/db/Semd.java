@@ -7,7 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 @Data
@@ -29,10 +30,17 @@ public class Semd {
      * get string date = MM.yyyy
      * @return string date = MM.yyyy
      */
-    public String getStringDate() {
-        Date date = this.date;
-        SimpleDateFormat DateFor = new SimpleDateFormat("MM.yyyy");
-        return DateFor.format(date);
+    public String getFormatDate() {
+        // Formatter for the input date
+        DateTimeFormatter inputFormat =
+                DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy");
+
+        // The parsed date
+        ZonedDateTime parsed = ZonedDateTime.parse(getDate().toString(), inputFormat);
+
+        // The output format
+        final DateTimeFormatter outputFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+        return outputFormat.format(parsed);
     }
 
     public String getCode() {

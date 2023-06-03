@@ -72,7 +72,7 @@ public class FileController {
     public String getAllSemds(List<Semd> list) {
         String answer = "";
         if (list.isEmpty()) {
-            return "Список СЭМД пустой!";
+            return "Список пакетов спецификации пустой!";
         }
         for (Semd s : list) {
             answer += s.getCode() + ". " + s.getName() + "("+s.getStringDate()+")\n";

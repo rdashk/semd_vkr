@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import ru.isu.repository.FileSemdRepository;
 import ru.isu.repository.SemdRepository;
 import ru.isu.repository.UserRepository;
@@ -21,13 +22,6 @@ public class PageController {
 
     @Autowired
     private UserRepository userRepository;
-
-    /*@GetMapping("/home")
-    public String home(@RequestParam(name="name", required=false, defaultValue="World") String name, Model model) {
-        model.addAttribute("name", name);
-        return "home";
-        //return "redirect:/appointments";
-    }*/
 
     @GetMapping("/home")
     public String start(Model model) {
@@ -50,5 +44,15 @@ public class PageController {
     public String getUsers(Model model) {
         model.addAttribute("users", userRepository.findAll());
         return "users";
+    }
+
+    @GetMapping("/deleteSemd/{code}")
+    public String empDelete(@PathVariable("code") String code) {
+
+        System.out.println("get semd name"+semdRepository.findSemdByCode(code));
+        semdRepository.deleteSemdById(code);
+        // delete all files from current semd code folder
+        fileSemdRepository.deleteFileSemdsByCode(code);
+        return "redirect:/all_semds";
     }
 }

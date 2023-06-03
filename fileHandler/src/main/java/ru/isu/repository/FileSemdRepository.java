@@ -14,5 +14,5 @@ public interface FileSemdRepository extends MongoRepository<FileSemd, String> {
     List<String> findFilesByCode(String code);
 
     @Query(value = "{_id: '?0'}")
-    FileSemd findFileSemdsById(String code);
+    FileSemd findFileSemdById(String code);
 }

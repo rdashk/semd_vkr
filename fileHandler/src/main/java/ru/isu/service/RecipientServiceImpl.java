@@ -67,7 +67,9 @@ public class RecipientServiceImpl implements RecipientService {
                 textToSend = fileController.getListFiles(
                         fileSemdRepository.findFilesByCode(fileController.getSemdCode()));
             }
-            System.out.println(fileSemdRepository.findFileSemdsById("77/CDA.xsd").getContent().toString());
+            // TODO: for future save
+            byte[] bin = fileSemdRepository.findFileSemdById("77/CDA.xsd").getContent();
+            System.out.println(new String(bin));
 
         } else if (command.equals("/currentSEMD")) {
             if (fileController.getSemdCode().isEmpty()) {
@@ -120,7 +122,7 @@ public class RecipientServiceImpl implements RecipientService {
                 } else {
                     textToSend = DESCR_GET_ZIP;
                     Semd semdFromTable = semdRepository.findSemdByCode(semd.getCode());
-                    //TODO: change date
+                    //TODO: change date difference
                     if (semdFromTable == null || semdFromTable.getDate().before(semd.getDate())) {
                         semdRepository.save(semd);
                     }

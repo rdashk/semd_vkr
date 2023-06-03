@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ru">
 <head>
     <title>Все пользователи</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -10,8 +10,11 @@
 
 <!-- Top -->
 <div class="w3-bar w3-top w3-black w3-large" style="z-index:4">
-    <button class="w3-bar-item w3-button w3-hide-large w3-hover-none w3-hover-text-light-grey" onclick="w3_open();"><i class="fa fa-bars"></i>Menu</button>
-    <span class="w3-bar-item">Проверка СЭМД</span>
+    <button class="w3-bar-item w3-button w3-hide-large w3-hover-none w3-hover-text-light-grey" onclick="w3_open();"><i class="fa fa-bars"></i>Меню</button>
+    <span class="w3-bar-item w3-wide w3-center">Проверка СЭМД</span>
+    <form class="w3-bar-item w3-right" th:action="@{/logout}" method="post">
+        <input class="w3-button" type="submit" value="Выйти"/>
+    </form>
 </div>
 
 <!-- Sidebar/menu -->
