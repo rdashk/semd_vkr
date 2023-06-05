@@ -124,16 +124,10 @@ public class Files {
     }
 
     /**
-     * Checking for .xml and .sch files are exist
-     *
-     * @return is exists .xml .xsd and .sch files
-     */
-
-    /**
      * Unpacking archive and saving all files from it
      *
      * @return manage to do unpacking
-     * @throws IOException
+     * @throws IOException file exception
      */
     public Semd unpackZip(DocType docType) throws IOException {
         String zipFolder = createFileFromURL(docType);
@@ -184,7 +178,7 @@ public class Files {
 
                         while ((count = zis.read(buffer)) != -1) {
                             byteArray.write(buffer, 0, count);
-                            byte[] bytes = byteArray.toByteArray();
+                            //byte[] bytes = byteArray.toByteArray();
                             //currentSemdTitle = new String(bytes, "UTF-8");
                             currentSemdTitle = byteArray.toString(StandardCharsets.UTF_8);
                             //setCurrentSEMDtitle(new String(bytes, "UTF-8"));
@@ -248,7 +242,6 @@ public class Files {
 
     /**
      * Save file to currentSEMDcode
-     *
      * @param docType class DocType
      */
     public void saveNewFile(DocType docType) {
@@ -276,8 +269,8 @@ public class Files {
 
     /**
      *
-     * @param fileName
-     * @throws IOException
+     * @param fileName file name
+     * @throws IOException fileexception
      */
     public void deleteFile(String fileName) throws IOException {
         System.out.println("delete file = " +fileName);

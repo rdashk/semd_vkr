@@ -15,15 +15,10 @@ public class RabbitMQConfig {
     /**
      * convert update to json then send to rabbitmq
      * when getting json then convert json to javaObject
-     * @return
+     * @return json type
      */
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
-
-    /*@Bean
-    public RecipientService getRecipientService(RabbitTemplate r) {
-        return new RecipientServiceImpl(new SenderServiceImpl(r), new FileController(), semdRepository);
-    }*/
 }

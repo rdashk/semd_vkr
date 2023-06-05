@@ -159,9 +159,8 @@ public class BotController{
         //System.out.println(pathFilesWithErrors.toString());
         if (!pathFilesWithErrors.isEmpty()) {
             telegramBot.sendFile(Long.parseLong(message.getChatId()), pathFilesWithErrors);
-
-            deleteFolder(message.getChatId());
         }
+        deleteFolder(message.getChatId());
     }
 
     private void deleteFolder(String folderName) {

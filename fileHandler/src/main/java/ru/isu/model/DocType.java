@@ -14,10 +14,5 @@ public class DocType {
     public Type getType() {
         return type;
     }
-
-    public DocType(String filePath, Type type) {
-        this.filePath = filePath;
-        this.type = type;
-    }
 }
 

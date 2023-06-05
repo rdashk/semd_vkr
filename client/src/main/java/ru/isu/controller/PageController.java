@@ -47,7 +47,7 @@ public class PageController {
     }
 
     @GetMapping("/deleteSemd/{code}")
-    public String empDelete(@PathVariable("code") String code) {
+    public String semdDelete(@PathVariable("code") String code) {
 
         System.out.println("get semd name"+semdRepository.findSemdByCode(code));
         semdRepository.deleteSemdById(code);

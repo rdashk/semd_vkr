@@ -1,5 +1,6 @@
 package ru.isu.service;
 
+import name.dmaus.schxslt.SchematronException;
 import org.jvnet.hk2.annotations.Service;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +17,10 @@ import ru.isu.model.enums.Type;
 import ru.isu.repository.FileSemdRepository;
 import ru.isu.repository.SemdRepository;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static ru.isu.model.RabbitQueue.*;
 
@@ -35,6 +37,8 @@ public class RecipientServiceImpl implements RecipientService {
     final String DESCR_SEMD = "CЭМД не выбран. \nВыбор СЭМД осуществляется автоматически " +
             "при загрузке вашего xml-документа.\nДля просмотра списка доступных СЭМД команда /listSEMD ";
 
+    final String DESCR_ADD_XML = "\nЗагрузите файл в формате <b>xml</b>." +
+            "\nПРОВЕРЯЙТЕ РАЗРЕШЕНИЕ ФАЙЛА ПЕРЕД ЗАГРУЗКОЙ!";
 
     private final SenderService sender;
     private final FileController fileController;
@@ -55,7 +59,7 @@ public class RecipientServiceImpl implements RecipientService {
         //System.out.println("RecipientServiceImpl:get text message");
 
         var chatId = answer.getChatId();
-        String textToSend;
+        String textToSend = "";
         String command = answer.getMessage();
 
         switch (command) {
@@ -83,7 +87,13 @@ public class RecipientServiceImpl implements RecipientService {
                     }
                 }
             }
-            default -> textToSend = fileController.getText(command);
+            case "/checkXML" -> {
+                textToSend = checkAndGetAnswer(chatId+"/"+chatId+".xml", false);
+            }
+            case "/checkXML_body" -> {
+                textToSend = checkAndGetAnswer(chatId+"/"+chatId+".xml", true);
+            }
+            default -> textToSend = "Выберете другую команду!";
         }
 
         // choose type massage
@@ -91,6 +101,44 @@ public class RecipientServiceImpl implements RecipientService {
             sender.send(VALID_MESSAGE, new Answer(chatId, textToSend));
         } else {
             sender.send(ANSWER_MESSAGE, new Answer(chatId, textToSend));
+        }
+    }
+
+    private String checkAndGetAnswer(String xmlPath, boolean body) {
+        if (!new File(xmlPath).exists()) {
+            return DESCR_ADD_XML;
+        }
+        if (fileSemdRepository.existsFileSemdByCode(fileController.getSemdCode())) {
+            try {
+                downloadFilesToSystem(fileController.getSemdCode());
+                return fileController.readyToChecking(body);
+            } catch (SchematronException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return DESCR_ADD_ZIP;
+    }
+
+    private void downloadFilesToSystem(String code) throws IOException {
+        List<FileSemd> listFiles = fileSemdRepository.findFiles(code);
+        File directPath;
+        for (FileSemd f: listFiles) {
+            String filename = f.getId();
+            if (filename.contains("/")) {
+                String[] arr = filename.split("/");
+                String path = arr[0]+"/";
+                for (int i=1;i<arr.length-1;i++) {
+                    path+=arr[i]+"/";
+                }
+                if (!new File(path).exists()) {
+                    directPath = new File(path);
+                    directPath.mkdirs();
+                    //System.out.println("new dir:  " + path);
+                }
+            }
+            OutputStream os = new FileOutputStream(filename);
+            os.write(f.getContent());
+            os.close();
         }
     }
 
@@ -136,7 +184,7 @@ public class RecipientServiceImpl implements RecipientService {
                             System.out.println(e.getMessage());
                         }
                     }
-                    fileController.clearFilesFromZip();
+                    fileController.clearZipContent();
                 }
             }
             case XML -> textToSend = fileController.getXml(chatId, message.getText());

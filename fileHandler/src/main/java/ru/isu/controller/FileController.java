@@ -17,12 +17,6 @@ import static ru.isu.model.enums.Type.*;
 public class FileController {
     Files files = new Files();
 
-    final String DESCR_ADD_XML = "\nЗагрузите файл в формате <b>xml</b>." +
-            "\nПРОВЕРЯЙТЕ РАЗРЕШЕНИЕ ФАЙЛА ПЕРЕД ЗАГРУЗКОЙ!";
-    final String DESCR_ADD_ZIP = "\nЗагрузите пакет спецификации СЭМД (имя архива = <b>КОД_СЭМД.zip</b>). В архиве обязательно наличие:" +
-            "1) схем (<b>xsd</b>)" +
-            "2) текстового документа с названием СЭМД." +
-            "\nДля проверки на соответствие схематрону - наличие схематрона (файл <b>sch</b>).";
     final String DESCR_GET_XML = "Файл <b>xml</b> успешно загружен! ";
     final String DESCR_CHECK = "\n\n<b>Команды:</b>\n\n" +
             "/checkXML - проверка xml-документа на соответствие пакету спецификации\n" +
@@ -30,39 +24,6 @@ public class FileController {
     final String DESCR_ANS = "<b>Результат проверки</b>\n\n";
     final String DESCR_SEMD = "Пакет спецификации не определен! \nВыбор нужного пакета осуществляется " +
             "при загрузке xml-документа.\nДля просмотра списка доступных пакетов спецификации - команда /listSEMD ";
-
-
-    public String getText(String messageText) {
-
-        switch (messageText) {
-            case "/checkXML" -> {
-                try {
-                    return readyToChecking(false);
-                } catch (SchematronException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            case "/checkXML_body" -> {
-                try {
-                    return readyToChecking(true);
-                } catch (SchematronException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            case "/deleteMyXML" -> {
-                String chatId = files.getChatID();
-                if (chatId.isEmpty()) return "xml-документ отсутствует в системе!";
-                try {
-                    // delete all files from user folder
-                    files.deleteFolder(chatId);
-                    return "xml-документ успешно удален.";
-                } catch (IOException e) {
-                    return "xml-документ отсутствует в системе!";
-                }
-            }
-        }
-        return "Выберете другую команду!";
-    }
 
     /**
      * Bot send user all semds list
@@ -81,24 +42,30 @@ public class FileController {
     }
 
     /**
-     * User have all files and can get conformity check
+     * Templates for check is exist, check existing user file (xml)
+     * @param body full document or only body
+     * @return result of checking or error message
+     * @throws SchematronException exception
      */
-    private String readyToChecking(boolean body) throws SchematronException {
-        String chatId = files.getChatID();
-        
-        if (files.getCurrentSEMDcode().isEmpty()) {
-            return DESCR_ADD_XML;
-        } else if (!files.fileIsExist(files.getCurrentSEMDcode())) {
-            return DESCR_ADD_ZIP;
+    public String readyToChecking(boolean body) throws SchematronException {
+        String answer = DESCR_ANS;
+        if (body) {
+            answer+=files.getAnswer(true);
+        } else {
+            answer+=files.getAnswer(false);
         }
-        if (files.fileIsExist(chatId+"/"+chatId+".xml") && files.fileIsExist(files.getCurrentSEMDcode())) {
+        try {
+            files.deleteFolder(getSemdCode());
+            String chatId = files.getChatID();
             if (body) {
-                return DESCR_ANS+files.getAnswer(true);
+                files.deleteFile(chatId+"/"+chatId+"_b.xml");
             } else {
-                return DESCR_ANS+files.getAnswer(false);
+                files.deleteFile(chatId+"/"+chatId+".xml");
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return "Загрузите xml-документ!";
+        return answer;
     }
 
     public Type getDocType(String mimeType, String docPath) {
@@ -164,7 +131,12 @@ public class FileController {
         return files.getPathList();
     }
 
-    public void clearFilesFromZip() {
+    public void clearZipContent() {
+        try {
+            files.deleteFolder(getSemdCode());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         files.getPathList().clear();
     }
 }

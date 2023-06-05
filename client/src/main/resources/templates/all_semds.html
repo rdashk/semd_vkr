@@ -46,7 +46,7 @@
             </thead>
             <tbody>
             <tr th:if="${semds.isEmpty()}">
-                <td colspan="4"> Нет ни одного СЭМД </td>
+                <td colspan="4"> Нет ни одного пакета спецификации </td>
             </tr>
             <tr th:each="semd : ${semds}" >
                 <td><span th:text="${semd.getId()}"> код </span></td>
