@@ -28,9 +28,6 @@ import java.util.zip.ZipInputStream;
 @Setter
 public class Files {
 
-    List<String> pathList = new ArrayList<>();
-    private String currentSEMDcode = "";
-    private String chatID = "";
     private SEMDvalidator validator;
     private Stax stax;
     String ADD_SCHEMATRON = "\nДобавьте схематрон в выбранный СЭМД." +
@@ -41,8 +38,6 @@ public class Files {
      * @return string result of checking
      */
     public String checkDocByPackage(String semdCode, String chatId) {
-
-
             this.validator = new SEMDvalidator();
             this.stax = new Stax();
 
@@ -107,15 +102,16 @@ public class Files {
      * @param docType file link from telegram chat
      * @return file name in system directory
      */
+    //TODO: think about file names!!!
     private String createFileFromURL(DocType docType) throws IOException {
         URL urlFile = new URL(docType.getFilePath());
-        String file = docType.getFileName().isEmpty()? getChatID(): docType.getFileName();
+        String newFolder = docType.getFileName();
         String fileName;
         switch (docType.getType()) {
-            case XML -> fileName = getChatID() + "/" + file + ".xml";
-            //case XSD -> fileName = getChatID() + "/" + file + ".xsd";
-            case ZIP -> fileName = file + ".zip";
-            case SCH -> fileName = getCurrentSEMDcode() + "/"+file+".sch";
+            case XML -> fileName = newFolder + "/" + newFolder + ".xml";
+            //case XSD -> fileName = newFolder + "/" + newFolder + ".xsd";
+            case ZIP -> fileName = newFolder + ".zip";
+            case SCH -> fileName = newFolder + "/schematron.sch";
             default -> throw new IllegalStateException("Unexpected value: " + docType.getType().toString());
         }
         File f = new File(fileName);
@@ -189,8 +185,6 @@ public class Files {
 
                     }
                     else {// it's shema or schematron
-
-                        pathList.add(filename);
 
                         if (fileType.equals(Type.SCH)) {
                             filename = semdCode +"/schematron.sch";
@@ -280,5 +274,22 @@ public class Files {
         if (new File(fileName).exists()) {
             FileUtils.forceDelete(new File(fileName));
         }
+    }
+
+    public byte[] getByteContent(String filePath) {
+        byte[] result = new byte[0];
+
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(filePath));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                byte[] bytes = line.getBytes();
+                result = Bytes.concat(result, bytes);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
     }
 }

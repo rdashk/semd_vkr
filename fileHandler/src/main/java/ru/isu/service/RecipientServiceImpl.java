@@ -75,9 +75,6 @@ public class RecipientServiceImpl implements RecipientService {
                         textToSend = DESCR_SEMD;
                     }
                 }
-                /* TODO: for future save
-                byte[] bin = fileSemdRepository.findFileSemdById("77/CDA.xsd").getContent();
-                System.out.println(new String(bin));*/
             }
             case "/currentSEMD" -> {
                 if (!fileExist(chatId+"/"+chatId+".xml")) {
@@ -166,7 +163,6 @@ public class RecipientServiceImpl implements RecipientService {
         String textToSend;
         Type type = fileController.getDocType(message.getDocument().getMimeType(),
                 message.getText());
-        //String semdCodeFromController = fileController.getSemdCode(chatId);
         switch (type) {
             case ZIP -> {
                 Document doc = message.getDocument();
@@ -200,19 +196,36 @@ public class RecipientServiceImpl implements RecipientService {
                 }
             }
             case XML -> textToSend = fileController.getXml(chatId, message.getText());
-            /*case SCH -> {
-                if (semdRepository.existsById(semdCodeFromController)) {
-                    textToSend = fileController.addFileToSemdFiles("schematron", message.getText(), Type.SCH);
-                    String path = semdCodeFromController+"/schematron.sch";
-                    try {
-                        fileSemdRepository.save(new FileSemd(path,semdCodeFromController, Files.readAllBytes(Paths.get(path))));
-                    } catch (IOException e) {
-                        System.out.println("SERVER.getDocMessage:"+e.getMessage());
-                    }
+            case SCH -> {
+                if (!fileExist(chatId + "/" + chatId + ".xml")) {
+                    textToSend = "Невозможно сохранить файл!\n" + DESCR_ADD_XML;
                 } else {
-                    textToSend = "Невозможно сохранить файл! Отсутствует архив СЭМД("+semdCodeFromController+")\n"+DESCR_ADD_ZIP;
+                    String semdCode = fileController.getSemdCode(chatId);
+                    fileController.addToUserFolder(chatId, message.getText(), Type.SCH);
+                    if (semdRepository.existsById(semdCode)) {
+                        SemdPackage semd = semdRepository.findSemdPackagesById(semdCode);
+                        List<OnePackageFile> files = semd.getFiles();
+                        byte[] content = fileController.getByteContent(chatId+"/schematron.sch");
+                        boolean flag = false;
+                        for (OnePackageFile f: files) {
+                            if (f.getId().equals(semdCode+"/schematron.sch")) {
+                                f.setContent(content);
+                                flag = true;
+                                break;
+                            }
+                        }
+                        if (!flag) {
+                            files.add(new OnePackageFile(semdCode+"/schematron.sch", content));
+                        }
+                        semd.setFiles(files);
+                        semd.setDate(new Date());
+                        semdRepository.save(semd);
+                        textToSend = "Файл schematron.sch успешно добавлен в пакет спецификации (" + semdCode + ")";
+                    } else {
+                        textToSend = "Невозможно сохранить файл! Отсутствует пакет спецификации (" + semdCode + ")\n" + DESCR_ADD_ZIP;
+                    }
                 }
-            }*/
+            }
             default -> textToSend = "Ошибка!";
         }
 

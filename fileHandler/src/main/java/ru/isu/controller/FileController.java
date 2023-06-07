@@ -93,19 +93,13 @@ public class FileController {
     }
 
     public String getXml(String chatId, String text) {
-        files.setChatID(chatId);
-        DocType docType = new DocType("", text, XML);
+        DocType docType = new DocType(chatId, text, XML);
         files.saveNewFile(docType);
-
-        files.setCurrentSEMDcode(Node.getAttributeValue(chatId+"/"+chatId+".xml", "ClinicalDocument/code/@code"));
-        return DESCR_GET_XML + "\nТекущий код СЭМД = " + files.getCurrentSEMDcode() + ". \n" + DESCR_CHECK;
+        return DESCR_GET_XML + "\nТекущий код СЭМД = " + getSemdCode(chatId) + ". \n" + DESCR_CHECK;
     }
 
-    public String addFileToSemdFiles(String filename, String path, Type type) {
-        //files.setChatID(chatId);
+    public void addToUserFolder(String filename, String path, Type type) {
         files.saveNewFile(new DocType(filename, path, type));
-
-        return "Файл " + filename + "."+type.getName()+" успешно сохранен!";
     }
 
     public String getSemdCode(String chatId) {
@@ -124,17 +118,15 @@ public class FileController {
         return answer;
     }
 
-    public List<String> getFilesFromZip() {
-        //System.out.println(list.toString());
-        return files.getPathList();
-    }
-
     public void clearZipContent(String semdCode) {
         try {
             files.deleteFolder(semdCode);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        files.getPathList().clear();
+    }
+
+    public byte[] getByteContent(String filePath) {
+        return files.getByteContent(filePath);
     }
 }

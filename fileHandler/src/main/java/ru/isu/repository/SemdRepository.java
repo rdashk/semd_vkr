@@ -21,4 +21,6 @@ public interface SemdRepository extends MongoRepository<SemdPackage, String> {
 
     @Query(value = "{'_id':'?0'}", fields = "{'files': 1}")
     SemdPackage getFilesByCode(String code);
+
+    SemdPackage findSemdPackagesById(String id);
 }
