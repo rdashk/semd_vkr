@@ -40,65 +40,64 @@ public class Files {
      * Checking xml file using shema and schematron
      * @return string result of checking
      */
-    public String getAnswer(boolean body) {
+    public String checkDocByPackage(String semdCode, String chatId) {
 
-        if (!chatID.isEmpty() && !currentSEMDcode.isEmpty()) {
 
             this.validator = new SEMDvalidator();
             this.stax = new Stax();
 
-            File f = new File(getChatID()+"/errors/");
+            File f = new File(chatId+"/errors/");
             f.mkdir();
 
-            if (body) {
-                if (fileIsExist(getCurrentSEMDcode()+"/schematron.sch")) {
-                    return checkBodyBySchematron();
-                }
-                return "Проверка тела документа невозможна! В СЭМД отсутствует файл схематрона."+ADD_SCHEMATRON;
-            }
             List<String> errorsShema = validator.resultOfSchemaChecking(
-                    getCurrentSEMDcode() + "/" + "CDA.xsd",
-                    getChatID() + "/" + getChatID()+".xml");
-            if (fileIsExist(getCurrentSEMDcode()+"/schematron.sch")) {
-                List<String> errorsSchematron = validator.resultOfSchematronChecking(getCurrentSEMDcode()+"/schematron.sch",
-                        getChatID() + "/" + getChatID()+".xml");
+                    semdCode + "/" + "CDA.xsd",
+                    chatId + "/" + chatId+".xml");
+            if (fileIsExist(semdCode+"/schematron.sch")) {
+                List<String> errorsSchematron = validator.resultOfSchematronChecking(semdCode+"/schematron.sch",
+                        chatId + "/" + chatId+".xml");
                 if (errorsShema.isEmpty() && errorsSchematron.isEmpty()) {
                     return "Файл соответствует схемам и схематрону";
                 }
                 if (errorsShema.isEmpty()) {
-                    stax.errorsSchematronFilesCreate(errorsSchematron, getChatID()+"/errors/errors_schematron",
-                            getChatID() + "/" + getChatID()+".xml");
+                    stax.errorsSchematronFilesCreate(errorsSchematron, chatId+"/errors/errors_schematron",
+                            chatId + "/" + chatId+".xml");
                     return "Файл соответствует схемам.\n\nВ схематроне найдены ошибки!";
                 }
-                stax.errorsSchemaFileCreate(errorsShema, getChatID()+"/errors/errors_shema");
+                stax.errorsSchemaFileCreate(errorsShema, chatId+"/errors/errors_shema");
                 return "Файл соответствует схематрону.\n\nВ схемах найдены ошибки!";
 
             }
             if (errorsShema.isEmpty()) {
                 return "Файл соответствует схемам. \n\nФайл схематрона отсутствует.\n"+ADD_SCHEMATRON;
             }
-            stax.errorsSchemaFileCreate(errorsShema, getChatID()+"/errors/errors_shema");
+            stax.errorsSchemaFileCreate(errorsShema, chatId+"/errors/errors_shema");
             return "В схемах найдены ошибки!\nВ СЭМД отсутствует файл схематрона."+ADD_SCHEMATRON;
-
-        }
-        return "Файлы отсутствуют! \nЗагрузите xml-документ для начала работы.";
     }
 
-    private String checkBodyBySchematron() {
+    public String checkBodyBySchematron(String semdCode, String chatId) {
+        this.validator = new SEMDvalidator();
+        this.stax = new Stax();
 
-        String xmlFile = getChatID() + "/" + getChatID()+".xml";
-        String schFile = getCurrentSEMDcode()+"/schematron.sch";
-        stax.saveBody(xmlFile, getChatID()+"/"+getChatID()+"_b", Type.XML);
-        stax.saveBody(schFile, getChatID()+"/schematron_b", Type.SCH);
+        File f = new File(chatId+"/errors/");
+        f.mkdir();
 
-        List<String> errorsSchematron = validator.resultOfSchematronChecking(
-                getChatID()+"/schematron_b.sch",
-                getChatID()+"/"+getChatID()+"_b.xml");
-        if (errorsSchematron == null) {
-            return "Тело xml-документа соответствует телу схематрона";
+        if (fileIsExist(semdCode+"/schematron.sch")) {
+            String xmlFile = chatId + "/" + chatId+".xml";
+            String schFile = semdCode+"/schematron.sch";
+            stax.saveBody(xmlFile, chatId+"/"+chatId+"_b", Type.XML);
+            stax.saveBody(schFile, chatId+"/schematron_b", Type.SCH);
+
+            List<String> errorsSchematron = validator.resultOfSchematronChecking(
+                    chatId+"/schematron_b.sch",
+                    chatId+"/"+chatId+"_b.xml");
+            if (errorsSchematron == null) {
+                return "Тело xml-документа соответствует телу схематрона";
+            }
+            stax.errorsSchematronFilesCreate(errorsSchematron, "/errors/errors_body", chatId+"/"+chatId+".xml");
+            return "В теле документа найдены ошибки!";
+
         }
-        stax.errorsSchematronFilesCreate(errorsSchematron, "/errors/errors_body", getChatID()+"/"+getChatID()+".xml");
-        return "В теле документа найдены ошибки!";
+        return "Проверка тела документа невозможна! В СЭМД отсутствует файл схематрона."+ADD_SCHEMATRON;
     }
 
 

@@ -45,16 +45,15 @@ public class FileController {
      * @return result of checking or error message
      * @throws SchematronException exception
      */
-    public String readyToChecking(boolean body, String semdCode) throws SchematronException {
+    public String readyToChecking(boolean body, String semdCode, String chatId) throws SchematronException {
         String answer = DESCR_ANS;
         if (body) {
-            answer+=files.getAnswer(true);
+            answer+=files.checkBodyBySchematron(semdCode, chatId);
         } else {
-            answer+=files.getAnswer(false);
+            answer+=files.checkDocByPackage(semdCode, chatId);
         }
         try {
             files.deleteFolder(semdCode);
-            String chatId = files.getChatID();
             if (body) {
                 files.deleteFile(chatId+"/"+chatId+"_b.xml");
             } else {

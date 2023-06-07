@@ -117,7 +117,7 @@ public class RecipientServiceImpl implements RecipientService {
         if (semdRepository.existsById(semdCode)) {//if (fileSemdRepository.existsFileSemdByCode(semdCode)) {
             try {
                 downloadFilesToSystem(semdCode);
-                return fileController.readyToChecking(body, semdCode);
+                return fileController.readyToChecking(body, semdCode, chatId);
             } catch (SchematronException | IOException e) {
                 throw new RuntimeException(e);
             }
