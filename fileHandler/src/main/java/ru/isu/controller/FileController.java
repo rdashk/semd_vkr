@@ -5,7 +5,8 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.isu.model.DocType;
 import ru.isu.model.Files;
 import ru.isu.model.Node;
-import ru.isu.model.db.Semd;
+import ru.isu.model.db.OnePackageFile;
+import ru.isu.model.db.SemdPackage;
 import ru.isu.model.enums.Type;
 
 import java.io.IOException;
@@ -22,20 +23,17 @@ public class FileController {
             "/checkXML - проверка xml-документа на соответствие пакету спецификации\n" +
             "/checkXML_body - проверка <b>тела</b> xml-документа на соответствие схематрону";
     final String DESCR_ANS = "<b>Результат проверки</b>\n\n";
-    final String DESCR_SEMD = "Пакет спецификации не определен! \nВыбор нужного пакета осуществляется " +
-            "при загрузке xml-документа.\nДля просмотра списка доступных пакетов спецификации - команда /listSEMD ";
-
     /**
      * Bot send user all semds list
      *
      * @return all semds
      */
-    public String getAllSemds(List<Semd> list) {
+    public String getAllSemds(List<SemdPackage> list) {
         String answer = "";
         if (list.isEmpty()) {
             return "Список пакетов спецификации пустой!";
         }
-        for (Semd s : list) {
+        for (SemdPackage s : list) {
             answer += s.getCode() + ". " + s.getName() + "("+s.getStringDate()+")\n";
         }
         return "<b>Список доступных пакетов спецификации</b>\n\n"+answer;
@@ -47,7 +45,7 @@ public class FileController {
      * @return result of checking or error message
      * @throws SchematronException exception
      */
-    public String readyToChecking(boolean body) throws SchematronException {
+    public String readyToChecking(boolean body, String semdCode) throws SchematronException {
         String answer = DESCR_ANS;
         if (body) {
             answer+=files.getAnswer(true);
@@ -55,7 +53,7 @@ public class FileController {
             answer+=files.getAnswer(false);
         }
         try {
-            files.deleteFolder(getSemdCode());
+            files.deleteFolder(semdCode);
             String chatId = files.getChatID();
             if (body) {
                 files.deleteFile(chatId+"/"+chatId+"_b.xml");
@@ -86,13 +84,13 @@ public class FileController {
         return OTHER;
     }
 
-    public Semd getZip(DocType docType) {
+    public SemdPackage getZip(DocType docType) {
         try {
             return files.unpackZip(docType);
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
-        return new Semd();
+        return new SemdPackage();
     }
 
     public String getXml(String chatId, String text) {
@@ -111,19 +109,20 @@ public class FileController {
         return "Файл " + filename + "."+type.getName()+" успешно сохранен!";
     }
 
-    public String getSemdCode() {
-        return files.getCurrentSEMDcode();
+    public String getSemdCode(String chatId) {
+        return Node.getAttributeValue(chatId+"/"+chatId+".xml", "ClinicalDocument/code/@code");
     }
 
-    public String getListFiles(List<String> list) {
+    public String getListFiles(List<OnePackageFile> list) {
         String answer = "";
-        for (String s : list) {
-            answer += s.substring(s.indexOf(" "), s.indexOf("}")) + "\n";
+        for (OnePackageFile f : list) {
+            //answer += s.substring(s.indexOf(" "), s.indexOf("}")) + "\n";
+            answer += f.getId() + "\n";
         }
         if (answer.isEmpty()) {
             return "Список пакетов спецификации пустой!";
         }
-        return "<b>Список файлов для СЭМД (код = "+getSemdCode()+")</b>\n\n"+answer;
+        return answer;
     }
 
     public List<String> getFilesFromZip() {
@@ -131,9 +130,9 @@ public class FileController {
         return files.getPathList();
     }
 
-    public void clearZipContent() {
+    public void clearZipContent(String semdCode) {
         try {
-            files.deleteFolder(getSemdCode());
+            files.deleteFolder(semdCode);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

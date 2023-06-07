@@ -9,14 +9,15 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 /*@Table(name = "semd")
 @Entity*/
-@Document(collection = "semd")
-public class Semd {
+@Document(collection = "semd_package")
+public class SemdPackage {
     @Id
     @JsonProperty("id")
     private String id;//code
@@ -24,6 +25,8 @@ public class Semd {
     private String name;
     @JsonProperty("date")
     private Date date;
+    @JsonProperty("files")
+    private List<OnePackageFile> files;
 
     /**
      * get string date = MM.yyyy

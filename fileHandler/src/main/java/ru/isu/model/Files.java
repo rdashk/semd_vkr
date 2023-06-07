@@ -1,10 +1,12 @@
 package ru.isu.model;
 
+import com.google.common.primitives.Bytes;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
-import ru.isu.model.db.Semd;
+import ru.isu.model.db.OnePackageFile;
+import ru.isu.model.db.SemdPackage;
 import ru.isu.model.enums.Type;
 import ru.isu.model.validation.SEMDvalidator;
 
@@ -129,7 +131,7 @@ public class Files {
      * @return manage to do unpacking
      * @throws IOException file exception
      */
-    public Semd unpackZip(DocType docType) throws IOException {
+    public SemdPackage unpackZip(DocType docType) throws IOException {
         String zipFolder = createFileFromURL(docType);
         String semdCode = docType.getFileName();
         String currentSemdTitle = "";
@@ -139,6 +141,8 @@ public class Files {
 
         InputStream is;
         ZipInputStream zis;
+
+        List<OnePackageFile> packageFileList = new ArrayList<>();
 
         try {
             is = new FileInputStream(zipFolder);
@@ -179,9 +183,7 @@ public class Files {
                         while ((count = zis.read(buffer)) != -1) {
                             byteArray.write(buffer, 0, count);
                             //byte[] bytes = byteArray.toByteArray();
-                            //currentSemdTitle = new String(bytes, "UTF-8");
                             currentSemdTitle = byteArray.toString(StandardCharsets.UTF_8);
-                            //setCurrentSEMDtitle(new String(bytes, "UTF-8"));
                             byteArray.reset();
                         }
                         zis.closeEntry();
@@ -189,7 +191,6 @@ public class Files {
                     }
                     else {// it's shema or schematron
 
-                        //for save to db
                         pathList.add(filename);
 
                         if (fileType.equals(Type.SCH)) {
@@ -198,14 +199,17 @@ public class Files {
                         }
 
                         // reading and writing files
-                        FileOutputStream fout = new FileOutputStream(filename);
+                        //FileOutputStream fout = new FileOutputStream(filename);
+                        byte[] result = new byte[0];
                         while ((count = zis.read(buffer)) != -1) {
                             byteArray.write(buffer, 0, count);
                             byte[] bytes = byteArray.toByteArray();
-                            fout.write(bytes);
+                            result = Bytes.concat(result, bytes);
+                            //fout.write(bytes);
                             byteArray.reset();
                         }
-                        fout.close();
+                        packageFileList.add(new OnePackageFile(filename, result));
+                        //fout.close();
                         zis.closeEntry();
 
                     }
@@ -214,10 +218,10 @@ public class Files {
             zis.close();
         } catch (IOException e) {
             e.printStackTrace();
-            return new Semd();
+            return new SemdPackage();
         }
         deleteFolder(zipFolder);
-        return new Semd(semdCode, currentSemdTitle, new Date());
+        return new SemdPackage(semdCode, currentSemdTitle, new Date(), packageFileList);
     }
 
     /**

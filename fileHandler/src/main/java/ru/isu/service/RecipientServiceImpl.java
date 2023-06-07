@@ -11,15 +11,16 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.isu.controller.FileController;
 import ru.isu.model.Answer;
 import ru.isu.model.DocType;
-import ru.isu.model.db.FileSemd;
-import ru.isu.model.db.Semd;
+import ru.isu.model.db.OnePackageFile;
+import ru.isu.model.db.SemdPackage;
 import ru.isu.model.enums.Type;
-import ru.isu.repository.FileSemdRepository;
 import ru.isu.repository.SemdRepository;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Date;
 import java.util.List;
 
 import static ru.isu.model.RabbitQueue.*;
@@ -44,9 +45,6 @@ public class RecipientServiceImpl implements RecipientService {
     private final FileController fileController;
     @Autowired
     private SemdRepository semdRepository;
-    @Autowired
-    private FileSemdRepository fileSemdRepository;
-
 
     public RecipientServiceImpl(SenderService sender, FileController fileController) {
         this.sender = sender;
@@ -65,33 +63,40 @@ public class RecipientServiceImpl implements RecipientService {
         switch (command) {
             case "/listSEMD" -> textToSend = fileController.getAllSemds(semdRepository.findAll());
             case "/listFiles" -> {
-                if (fileController.getSemdCode().isEmpty()) {
+                if (!fileExist(chatId+"/"+chatId+".xml")) {
                     textToSend = DESCR_SEMD;
                 } else {
-                    textToSend = fileController.getListFiles(
-                            fileSemdRepository.findFilesByCode(fileController.getSemdCode()));
+                    String semdCode = fileController.getSemdCode(chatId);
+                    if (semdRepository.existsById(semdCode)) {
+                        SemdPackage semd = semdRepository.getFileNamesByCode(semdCode);
+                        textToSend = "<b>Список файлов пакетов спецификации (код = "+semdCode+")</b>\n"+fileController.getListFiles(semd.getFiles());
+                    }
+                    else {
+                        textToSend = DESCR_SEMD;
+                    }
                 }
-                // TODO: for future save
+                /* TODO: for future save
                 byte[] bin = fileSemdRepository.findFileSemdById("77/CDA.xsd").getContent();
-                System.out.println(new String(bin));
+                System.out.println(new String(bin));*/
             }
             case "/currentSEMD" -> {
-                if (fileController.getSemdCode().isEmpty()) {
+                if (!fileExist(chatId+"/"+chatId+".xml")) {
                     textToSend = DESCR_SEMD;
                 } else {
-                    Semd semd = semdRepository.findSemdByCode(fileController.getSemdCode());
+                    String semdCode = fileController.getSemdCode(chatId);
+                    SemdPackage semd= semdRepository.findSemdNameByCode(semdCode);
                     if (semd == null) {
-                        textToSend = "\nВ базе данных отсутствует СЭМД с кодом = " + fileController.getSemdCode();
+                        textToSend = "\nВ базе данных отсутствует СЭМД с кодом = " + semdCode;
                     } else {
-                        textToSend = "\nТекущий СЭМД =" + semd.getName() + " (код " + semd.getCode() + ").";
+                        textToSend = "\nТекущий СЭМД =" + semd.getName() + " (код " + semdCode + ").";
                     }
                 }
             }
             case "/checkXML" -> {
-                textToSend = checkAndGetAnswer(chatId+"/"+chatId+".xml", false);
+                textToSend = checkDoc(chatId, false);
             }
             case "/checkXML_body" -> {
-                textToSend = checkAndGetAnswer(chatId+"/"+chatId+".xml", true);
+                textToSend = checkDoc(chatId, true);
             }
             default -> textToSend = "Выберете другую команду!";
         }
@@ -104,14 +109,15 @@ public class RecipientServiceImpl implements RecipientService {
         }
     }
 
-    private String checkAndGetAnswer(String xmlPath, boolean body) {
-        if (!new File(xmlPath).exists()) {
+    private String checkDoc(String chatId, boolean body) {
+        if (!fileExist(chatId+"/"+chatId+".xml")) {
             return DESCR_ADD_XML;
         }
-        if (fileSemdRepository.existsFileSemdByCode(fileController.getSemdCode())) {
+        String semdCode = fileController.getSemdCode(chatId);
+        if (semdRepository.existsById(semdCode)) {//if (fileSemdRepository.existsFileSemdByCode(semdCode)) {
             try {
-                downloadFilesToSystem(fileController.getSemdCode());
-                return fileController.readyToChecking(body);
+                downloadFilesToSystem(semdCode);
+                return fileController.readyToChecking(body, semdCode);
             } catch (SchematronException | IOException e) {
                 throw new RuntimeException(e);
             }
@@ -119,10 +125,16 @@ public class RecipientServiceImpl implements RecipientService {
         return DESCR_ADD_ZIP;
     }
 
+    private boolean fileExist(String path) {
+        return new File(path).exists();
+    }
+
     private void downloadFilesToSystem(String code) throws IOException {
-        List<FileSemd> listFiles = fileSemdRepository.findFiles(code);
+        SemdPackage semd = semdRepository.getFilesByCode(code);
+        List<OnePackageFile> listFiles = semd.getFiles();
+
         File directPath;
-        for (FileSemd f: listFiles) {
+        for (OnePackageFile f: listFiles) {
             String filename = f.getId();
             if (filename.contains("/")) {
                 String[] arr = filename.split("/");
@@ -130,7 +142,7 @@ public class RecipientServiceImpl implements RecipientService {
                 for (int i=1;i<arr.length-1;i++) {
                     path+=arr[i]+"/";
                 }
-                if (!new File(path).exists()) {
+                if (!fileExist(path)) {
                     directPath = new File(path);
                     directPath.mkdirs();
                     //System.out.println("new dir:  " + path);
@@ -154,41 +166,41 @@ public class RecipientServiceImpl implements RecipientService {
         String textToSend;
         Type type = fileController.getDocType(message.getDocument().getMimeType(),
                 message.getText());
-        String semdCodeFromController = fileController.getSemdCode();
+        //String semdCodeFromController = fileController.getSemdCode(chatId);
         switch (type) {
             case ZIP -> {
                 Document doc = message.getDocument();
-                Semd semd = fileController.getZip(
+                SemdPackage semd = fileController.getZip(
                         new DocType(doc.getFileName().substring(0, doc.getFileName().indexOf(".zip")),
                                 message.getText(),
                                 type));
                 if (semd.getName().isEmpty()) {
                     textToSend = "Отсутствует файл с названием СЭМД!" + DESCR_ADD_ZIP;
-                } else if (semd.equals(new Semd())) {
+                } else if (semd.equals(new SemdPackage())) {
                     textToSend = "Произошла ошибка! Проверьте содержимое архива " +
                             "и загрузите его еще раз!" + DESCR_ADD_ZIP;
                 } else {
                     textToSend = DESCR_GET_ZIP;
-                    Semd semdFromTable = semdRepository.findSemdByCode(semd.getCode());
+                    String semdCode = semd.getCode();
+                    Date dateSemdByCode = semdRepository.findDateSemdByCode(semdCode);
                     //TODO: change date difference
-                    if (semdFromTable == null || semdFromTable.getDate().before(semd.getDate())) {
+                    if (dateSemdByCode == null || dateSemdByCode.before(semd.getDate())) {
                         semdRepository.save(semd);
                     }
-                    // save all files from folder to db
-                    // TODO: builder?
+                    /* save all files from folder to db
                     for (String filePath : fileController.getFilesFromZip()) {
                         try {
                             byte[] bytes = Files.readAllBytes(Paths.get(filePath));
-                            fileSemdRepository.save(new FileSemd(filePath, semd.getCode(), bytes));
+                            fileSemdRepository.save(new FileSemd(filePath, semdCode, bytes));
                         } catch (IOException e) {
                             System.out.println(e.getMessage());
                         }
-                    }
-                    fileController.clearZipContent();
+                    }*/
+                    fileController.clearZipContent(semdCode);
                 }
             }
             case XML -> textToSend = fileController.getXml(chatId, message.getText());
-            case SCH -> {
+            /*case SCH -> {
                 if (semdRepository.existsById(semdCodeFromController)) {
                     textToSend = fileController.addFileToSemdFiles("schematron", message.getText(), Type.SCH);
                     String path = semdCodeFromController+"/schematron.sch";
@@ -200,7 +212,7 @@ public class RecipientServiceImpl implements RecipientService {
                 } else {
                     textToSend = "Невозможно сохранить файл! Отсутствует архив СЭМД("+semdCodeFromController+")\n"+DESCR_ADD_ZIP;
                 }
-            }
+            }*/
             default -> textToSend = "Ошибка!";
         }
 
