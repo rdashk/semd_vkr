@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ru">
 <head>
-    <title>Все файлы</title>
+    <title th:text="${semdName}">Все файлы</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -23,23 +23,24 @@
         <h5>Меню</h5>
     </div>
     <div class="w3-bar-block">
-        <a th:href="@{home}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-eye fa-fw"></i>На главную</a>
-        <a th:href="@{all_semds}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-bell fa-fw"></i>Пакеты спецификации</a>
-        <a th:href="@{files}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-plus fa-fw"></i>Все файлы</a>
-        <a th:href="@{users}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-cog fa-fw"></i>Пользователи</a><br><br>
+        <a th:href="@{/home}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-eye fa-fw"></i>На главную</a>
+        <a th:href="@{/all_semds}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-bell fa-fw"></i>Пакеты спецификации</a>
+        <a th:href="@{/users}" class="w3-bar-item w3-button w3-padding"><i class="fa fa-cog fa-fw"></i>Пользователи</a><br><br>
     </div>
 </nav>
 
 <!-- PAGE -->
 <div style="margin-left:300px;margin-top:43px;padding:20px">
     <div class="w3-container">
-        <h5>Все файлы</h5>
+        <h4>
+            <b class="w3-wide" th:text="${semdName}"></b>
+        </h4>
 
         <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
             <thead>
             <tr>
-                <th> Расположение </th>
                 <th> Код </th>
+                <th> Расположение </th>
             </tr>
             </thead>
             <tbody>
@@ -47,8 +48,8 @@
                 <td colspan="2"> Нет ни одного файла </td>
             </tr>
             <tr th:each="f : ${files}" >
+                <td><span th:text="${code}"> код </span></td>
                 <td><span th:text="${f.getId()}"> расположение </span></td>
-                <td><span th:text="${f.getCode()}"> код </span></td>
             </tr>
             </tbody>
         </table>

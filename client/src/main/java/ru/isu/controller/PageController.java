@@ -6,7 +6,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import ru.isu.repository.FileSemdRepository;
+import ru.isu.model.db.SemdPackage;
 import ru.isu.repository.SemdRepository;
 import ru.isu.repository.UserRepository;
 
@@ -16,9 +16,6 @@ public class PageController {
 
     @Autowired
     private SemdRepository semdRepository;
-
-    @Autowired
-    private FileSemdRepository fileSemdRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -34,9 +31,13 @@ public class PageController {
         return "all_semds";
     }
 
-    @GetMapping("/files")
-    public String getFiles(Model model) {
-        model.addAttribute("files", fileSemdRepository.findAll());
+    @GetMapping("/all_semds/file/{code}")
+    public String getFiles(@PathVariable("code") String code, Model model) {
+        SemdPackage semd = semdRepository.getFileNamesByCode(code);
+        //System.out.println(semd);
+        model.addAttribute("semdName", semd.getName());
+        model.addAttribute("code", semd.getId());
+        model.addAttribute("files", semd.getFiles());
         return "files";
     }
 
@@ -48,11 +49,7 @@ public class PageController {
 
     @GetMapping("/deleteSemd/{code}")
     public String semdDelete(@PathVariable("code") String code) {
-
-        System.out.println("get semd name"+semdRepository.findSemdByCode(code));
-        semdRepository.deleteSemdById(code);
-        // delete all files from current semd code folder
-        fileSemdRepository.deleteFileSemdsByCode(code);
+        semdRepository.deleteById(code);
         return "redirect:/all_semds";
     }
 }
