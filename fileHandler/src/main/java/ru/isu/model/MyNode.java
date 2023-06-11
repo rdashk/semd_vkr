@@ -9,7 +9,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.IOException;
 
-public class Node {
+public class MyNode {
 
     /**
      * Getting attribute value from xml

@@ -89,12 +89,8 @@ public class RecipientServiceImpl implements RecipientService {
                     }
                 }
             }
-            case "/checkXML" -> {
-                textToSend = checkDoc(chatId, false);
-            }
-            case "/checkXML_body" -> {
-                textToSend = checkDoc(chatId, true);
-            }
+            case "/checkXML" -> textToSend = checkDoc(chatId, false);
+            case "/checkXML_body" -> textToSend = checkDoc(chatId, true);
             default -> textToSend = "Выберете другую команду!";
         }
 
@@ -111,7 +107,7 @@ public class RecipientServiceImpl implements RecipientService {
             return DESCR_ADD_XML;
         }
         String semdCode = fileController.getSemdCode(chatId);
-        if (semdRepository.existsById(semdCode)) {//if (fileSemdRepository.existsFileSemdByCode(semdCode)) {
+        if (semdRepository.existsById(semdCode)) {
             try {
                 downloadFilesToSystem(semdCode);
                 return fileController.readyToChecking(body, semdCode, chatId);

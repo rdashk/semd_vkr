@@ -4,9 +4,11 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfWriter;
 import ru.isu.model.enums.Type;
+import ru.isu.model.validation.Line;
 
 import javax.xml.stream.*;
 import java.io.*;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -15,11 +17,12 @@ import java.util.List;
 public class Stax {
 
     private XMLStreamReader xmlr;
+
     private XMLOutputFactory output;
     private XMLStreamWriter writer;
 
     /**
-     * Save only body of XML-file or SCH-file
+     * Save body of XML-file or SCH-file to new doc
      *
      * @param fileName    file path
      * @param nameForSave path for new created file
@@ -47,7 +50,7 @@ public class Stax {
     }
 
     /**
-     * Writing attributes to xml-document
+     * Writing attributes to XML doc
      */
     private void writeClinicalDocumentAttr() {
         String tagName = "component";
@@ -71,7 +74,7 @@ public class Stax {
     }
 
     /**
-     * Writing attributes to sch-document
+     * Writing attributes to SCH doc
      */
     private void writeSchematronAttr() {
         StaxReadToComment("У2");
@@ -161,14 +164,14 @@ public class Stax {
 
     /**
      * Write content to xml or sch files
-     * @throws XMLStreamException
+     * @throws XMLStreamException exception
      */
     private void StaxWrite() throws XMLStreamException {
         try {
             while (xmlr.hasNext()) {
                 xmlr.next();
                 switch (xmlr.getEventType()) {
-                    case XMLStreamConstants.START_ELEMENT: {
+                    case XMLStreamConstants.START_ELEMENT -> {
                         //writer.setPrefix(xmlr.getPrefix(), xmlr.getLocalName());
                         writer.writeStartElement(xmlr.getLocalName());
                         if (xmlr.getAttributeCount() > 0) {
@@ -180,20 +183,16 @@ public class Stax {
                                 }
                             }
                         }
-                        break;
                     }
-                    case XMLStreamConstants.CHARACTERS: {
+                    case XMLStreamConstants.CHARACTERS -> {
                         writer.writeCharacters(xmlr.getText());
-                        break;
                     }
-                    case XMLStreamConstants.COMMENT: {
+                    case XMLStreamConstants.COMMENT -> {
                         writer.writeComment(xmlr.getText());
-                        break;
                     }
-                    case XMLStreamConstants.END_ELEMENT: {
+                    case XMLStreamConstants.END_ELEMENT -> {
                         //writer.setPrefix(xmlr.getPrefix(), xmlr.getLocalName());
                         writer.writeEndElement();
-                        break;
                     }
                 }
             }
@@ -220,6 +219,7 @@ public class Stax {
         File txtFile = new File(fileName + ".txt");
         System.out.println("list errors=" + listErrors);
 
+
         String[] errors = new String[listErrors.size()];
         String[] descrErrors = new String[listErrors.size()];
 
@@ -234,20 +234,24 @@ public class Stax {
                 mes = mes.substring(end1 + 1);
                 end1 = mes.indexOf(" ");
 
-                writer.append(s1 +
-                        "\nlocation:    " + mes.substring(0, end1) +
-                        "\ndescription: " + mes.substring(end1 + 1) +
-                        "\n----\n");
+                writer.append(s1)
+                        .append("\nlocation:    ")
+                        .append(mes.substring(0, end1))
+                        .append("\ndescription: ")
+                        .append(mes.substring(end1 + 1))
+                        .append("\n----\n");
 
-
-                // TODO: change it to normal path
-                String[] arr = mes.substring(0, end1).replace("[1]","").split("/Q");
-                errors[i] = arr[arr.length-1];
-
+                errors[i] = mes.substring(0, end1);
                 descrErrors[i] = mes.substring(end1 + 1);
 
             }
             writer.close();
+
+            /* TODO: delete this
+            String ss1 = "/Q{urn:hl7-org:v3}ClinicalDocument[1]/Q{urn:hl7-org:v3}recordTarget[1]/Q{urn:hl7-org:v3}patientRole[1]";
+            String ss2 = "/Q{urn:hl7-org:v3}ClinicalDocument[1]/Q{urn:hl7-org:v3}recordTarget[1]/Q{urn:hl7-org:v3}author[1]";
+            errors = new String[]{ss1, ss2};
+            descrErrors = new String[]{"ss1", "ss2"};*/
 
             xmlr = XMLInputFactory.newInstance().createXMLStreamReader(currentXML, new FileInputStream(currentXML));
             Document document = new Document();
@@ -262,7 +266,8 @@ public class Stax {
             BaseColor currentColor = BaseColor.WHITE; // install background color
             Chunk chunk = new Chunk();
             Paragraph paragraph = new Paragraph();
-            int ind = 0, endInd = 0;
+            int ind = 0;
+            Line line = finderLine(errors[ind], currentXML);
 
             // read .xml and write to pdf
             while (xmlr.hasNext()) {
@@ -274,27 +279,16 @@ public class Stax {
                         } else {
                             str = new StringBuilder(xmlr.getPrefix() + ":" + xmlr.getLocalName());
                         }
-                        if (xmlr.getAttributeCount() > 0) {
-                            str.append(" ");
-                            for (int i = 0; i < xmlr.getAttributeCount(); i++) {
-                                if (xmlr.getAttributePrefix(i).isEmpty()) {
-                                    str.append(xmlr.getAttributeLocalName(i)).append("=\"").append(xmlr.getAttributeValue(i)).append("\" ");
-                                } else {
-                                    str.append(xmlr.getAttributePrefix(i)).append(":").append(xmlr.getAttributeLocalName(i)).append("=\"").append(xmlr.getAttributeValue(i)).append("\" ");
-                                }
-                            }
-                        }
                         str.append(">");
 
-                        if (ind < errors.length && xmlr.getName().toString().equals(errors[ind])) {
+                        if (xmlr.getLocation().getLineNumber() == line.getStart()) {
 
                             currentColor = BaseColor.PINK;
-                            chunk = new Chunk("Строка №" + xmlr.getLocation().getLineNumber() +
+                            // add mistake description and linenumber
+                            chunk = new Chunk("Строка №" + line.getStart() +
                                     "\n" + descrErrors[ind] + "\n", new Font(baseFont, 9, Font.NORMAL));
                             chunk.getFont().setColor(BaseColor.RED);
                             paragraph.add(chunk);
-
-                            ind++;
                         }
                         chunk = new Chunk("<" + str.toString(), font);
                         chunk.setBackground(currentColor);
@@ -325,9 +319,12 @@ public class Stax {
                         chunk.setBackground(currentColor);
                         chunk.getFont().setColor(BaseColor.BLUE);
                         paragraph.add(chunk);
-                        if (endInd < errors.length && xmlr.getName().toString().equals(errors[endInd])) {
+                        if (xmlr.getLocation().getLineNumber() == line.getEnd()) {
                             currentColor = BaseColor.WHITE;
-                            endInd = ind;
+                            ind++;
+                            if (ind < errors.length) {
+                                line = finderLine(errors[ind], currentXML);
+                            }
                         }
                         break;
                     }
@@ -342,6 +339,56 @@ public class Stax {
         } catch (XMLStreamException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Line finderLine(String path, String currentXML) {
+        String needPath = path.replace("[1]", "").replace("Q", "");
+        int start = 0;
+        System.out.println(needPath);
+
+        String[] errors = needPath.substring(1).split("/");
+        String pathStr = "/";
+        System.out.println(Arrays.toString(errors));
+
+        try {
+
+            XMLStreamReader xmlr2 = XMLInputFactory.newInstance().createXMLStreamReader(currentXML, new FileInputStream(currentXML));
+            int ind = 0;
+
+            // read .xml and write to pdf
+            while (xmlr2.hasNext()) {
+                xmlr2.next();
+                switch (xmlr2.getEventType()) { // choose xml element type
+                    case XMLStreamConstants.START_ELEMENT: {
+                        if (ind < errors.length && xmlr2.getName().toString().equals(errors[ind])) {
+                            pathStr += xmlr2.getName();
+                            if (pathStr.equals(needPath)) {
+                                start = xmlr2.getLocation().getLineNumber();
+                            } else {
+                                pathStr += "/";
+                            }
+                            //System.out.println(pathStr);
+
+                            ind++;
+                        }
+                        break;
+                    }
+                    case XMLStreamConstants.END_ELEMENT: {
+                        if (xmlr2.getName().toString().equals(errors[errors.length-1])) {
+                            return new Line(start, xmlr2.getLocation().getLineNumber());
+                        }
+                        break;
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        } catch (XMLStreamException e) {
+            throw new RuntimeException(e);
+        }
+
+        return new Line();
     }
 
     /**

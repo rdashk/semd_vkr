@@ -4,7 +4,7 @@ import name.dmaus.schxslt.SchematronException;
 import org.springframework.web.bind.annotation.RestController;
 import ru.isu.model.DocType;
 import ru.isu.model.Files;
-import ru.isu.model.Node;
+import ru.isu.model.MyNode;
 import ru.isu.model.db.OnePackageFile;
 import ru.isu.model.db.SemdPackage;
 import ru.isu.model.enums.Type;
@@ -103,7 +103,7 @@ public class FileController {
     }
 
     public String getSemdCode(String chatId) {
-        return Node.getAttributeValue(chatId+"/"+chatId+".xml", "ClinicalDocument/code/@code");
+        return MyNode.getAttributeValue(chatId+"/"+chatId+".xml", "ClinicalDocument/code/@code");
     }
 
     public String getListFiles(List<OnePackageFile> list) {
