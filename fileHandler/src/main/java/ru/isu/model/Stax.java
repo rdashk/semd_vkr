@@ -247,12 +247,6 @@ public class Stax {
             }
             writer.close();
 
-            /* TODO: delete this
-            String ss1 = "/Q{urn:hl7-org:v3}ClinicalDocument[1]/Q{urn:hl7-org:v3}recordTarget[1]/Q{urn:hl7-org:v3}patientRole[1]";
-            String ss2 = "/Q{urn:hl7-org:v3}ClinicalDocument[1]/Q{urn:hl7-org:v3}recordTarget[1]/Q{urn:hl7-org:v3}author[1]";
-            errors = new String[]{ss1, ss2};
-            descrErrors = new String[]{"ss1", "ss2"};*/
-
             xmlr = XMLInputFactory.newInstance().createXMLStreamReader(currentXML, new FileInputStream(currentXML));
             Document document = new Document();
             PdfWriter.getInstance(document, new FileOutputStream(fileName + ".pdf"));

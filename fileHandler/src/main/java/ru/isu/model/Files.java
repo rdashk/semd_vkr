@@ -69,6 +69,10 @@ public class Files {
             return "В схемах найдены ошибки!\nВ СЭМД отсутствует файл схематрона."+ADD_SCHEMATRON;
     }
 
+    /**
+     * Checking body xml file using body schematron
+     * @return string result of checking
+     */
     public String checkBodyBySchematron(String semdCode, String chatId) {
         this.validator = new SEMDvalidator();
         this.stax = new Stax();
@@ -102,7 +106,6 @@ public class Files {
      * @param docType file link from telegram chat
      * @return file name in system directory
      */
-    //TODO: think about file names!!!
     private String createFileFromURL(DocType docType) throws IOException {
         URL urlFile = new URL(docType.getFilePath());
         String newFolder = docType.getFileName();

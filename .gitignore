@@ -2,3 +2,4 @@
 /bot/target/
 /fileHandler/target/
 /rabbitMq/target/
+.idea
